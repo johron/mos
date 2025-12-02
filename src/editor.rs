@@ -77,7 +77,13 @@ impl<'a> Editor<'a> {
 
         // After insert, advance all cursors' columns by 1 (for simplicity).
         for cur in &mut self.cursors {
-            cur.col += 1;
+            if ch == '\n' {
+                cur.line += 1;
+                cur.col = 0;
+            } else {
+                cur.col += 1;
+            }
+
             *cur = Self::clamp_cursor(&self.rope, cur.clone());
         }
     }
@@ -112,18 +118,6 @@ impl<'a> Editor<'a> {
                 cur.line -= 1;
                 cur.col = self.rope.line(cur.line).len_chars();
             }
-            *cur = Self::clamp_cursor(&self.rope, cur.clone());
-        }
-    }
-
-    pub fn newline(&mut self) {
-        // add new line to rope at each cursor
-        self.input('\n');
-
-        // move cursor to next line start
-        for cur in &mut self.cursors {
-            cur.line += 1;
-            cur.col = 0;
             *cur = Self::clamp_cursor(&self.rope, cur.clone());
         }
     }

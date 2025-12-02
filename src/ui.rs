@@ -50,7 +50,6 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     let mut lines_spans: Vec<Line> = Vec::new();
     for (i, rope_line) in mosaic.editors[mosaic.current_editor].rope.lines().enumerate() {
         let text_line = rope_line.to_string();
-        // very simple highlight: if a keyword at the line start -> bold
         let spans = highlight_line(&text_line, &rust_keywords, &number_re);
         let mut line_spans = vec![Span::raw(format!("{:4} ", i))]; // small gutter
         line_spans.extend(spans);
@@ -66,6 +65,6 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     for cursor in &mosaic.editors[mosaic.current_editor].cursors {
         let x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
         let y = chunks[0].y + cursor.line as u16;
-        frame.set_cursor(x, y);
+        frame.set_cursor_position(Position::new(x, y));
     }
 }

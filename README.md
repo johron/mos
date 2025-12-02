@@ -2,4 +2,4 @@
 - (hopefully going to be a) Modern configurable terminal-based text editor
 
 ## TODO
-- [ ] Cursor movement, newlines, etc is very buggy
+- [x] Cursor movement, newlines, etc is very buggy (i think that's fixed now)

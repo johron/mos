@@ -85,7 +85,7 @@ fn handle_non_modifier(mosaic: &mut Mosaic, key_event: KeyEvent) {
         KeyCode::Down => editor.move_cursor(CursorMove::Down),
         KeyCode::Right => editor.move_cursor(CursorMove::Forward),
 
-        KeyCode::Enter => editor.newline(),
+        KeyCode::Enter => editor.input('\n'),
 
         KeyCode::Backspace => {
             editor.backspace();
