@@ -6,5 +6,4 @@ edition = "2024"
 [dependencies]
 ratatui = "0.29.0"
 crossterm = "0.29.0"
-tui-textarea = "0.7.0"
-anyhow = "1.0.100"
+tui-textarea = { version = "0.7.0", features = ["search"] }

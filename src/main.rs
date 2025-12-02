@@ -1,21 +1,17 @@
 mod ui;
 mod input;
-mod command;
 
-use std::{env, fmt, fs, io};
-use std::fmt::{format, Display};
+use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
+use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
+use ratatui::backend::CrosstermBackend;
+use ratatui::style::{Color, Style, Stylize};
+use ratatui::Terminal;
+use std::fmt::Display;
 use std::io::{BufRead, StdoutLock};
 use std::ops::AddAssign;
 use std::str::FromStr;
-use crossterm::event::{self, DisableMouseCapture, EnableMouseCapture, Event};
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
-use ratatui::{DefaultTerminal, Frame, Terminal};
-use ratatui::backend::CrosstermBackend;
-use ratatui::layout::{Alignment, Position};
-use ratatui::style::{Color, Modifier, Style, Stylize};
-use ratatui::symbols::border;
-use ratatui::widgets::{Block, Borders, Padding};
-use tui_textarea::{Input, TextArea};
+use std::{env, fmt, fs, io};
+use tui_textarea::TextArea;
 
 #[derive(Debug, Copy, Clone)]
 enum Mode {
@@ -64,20 +60,28 @@ impl AddAssign<&str> for Command {
 }
 
 #[derive(Debug)]
+struct Editor<'a> {
+    text_area: TextArea<'a>,
+    file_path: Option<String>,
+}
+
+#[derive(Debug)]
 struct Mosaic<'a> {
     mode: Mode,
     should_quit: bool,
-    text_area: TextArea<'a>,
     command: Command,
+    editors: Vec<Editor<'a>>,
+    current_editor: usize,
 }
 
 impl<'a> Mosaic<'a> {
-    fn new(mode: Mode, text_area: TextArea<'a>) -> Self {
+    fn new(mode: Mode, editor: Editor<'a>) -> Self {
         Self {
             mode,
             should_quit: false,
-            text_area,
             command: Command::new(),
+            editors: vec![editor],
+            current_editor: 0,
         }
     }
 
@@ -101,15 +105,23 @@ fn main() -> io::Result<()> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
+    let mut file_path: Option<String> = None;
     let mut text_area = if let Some(path_str) = env::args().nth(1) {
         let path = std::path::Path::new(&path_str);
         if path.exists() {
             let file = fs::File::open(path)?;
+            file_path = Some(path_str);
             io::BufReader::new(file)
                 .lines()
                 .collect::<io::Result<_>>()?
         } else {
-            TextArea::default()
+            // make the file if it doesn't exist
+            fs::File::create(path)?;
+            let file = fs::File::open(path)?;
+            file_path = Some(path_str);
+            io::BufReader::new(file)
+                .lines()
+                .collect::<io::Result<_>>()?
         }
     } else {
         TextArea::default()
@@ -118,7 +130,10 @@ fn main() -> io::Result<()> {
     text_area.set_line_number_style(Style::default().fg(Color::DarkGray));
     text_area.set_tab_length(4);
 
-    let mosaic = Mosaic::new(Mode::Normal, text_area);
+    let mosaic = Mosaic::new(Mode::Normal, Editor {
+        text_area,
+        file_path,
+    });
 
     let res = run(&mut terminal, mosaic);
 
