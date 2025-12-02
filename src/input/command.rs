@@ -29,12 +29,12 @@ pub fn handle_mode(mosaic: &mut Mosaic, key: KeyEvent) {
 }
 
 pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
-    let text_area = &mut mosaic.editors[mosaic.current_editor].text_area;
+    let editor = &mut mosaic.editors[mosaic.current_editor];
     let args = mosaic.command.content.as_str().split(' ').collect::<Vec<_>>();
 
     match args[0] {
         "q" => {
-            let current_content = text_area.lines().join("\n");
+            let current_content = editor.rope.to_string();
 
             if let Some(path) = mosaic.editors[mosaic.current_editor].file_path.as_ref() {
                 match std::fs::read_to_string(path) {
@@ -63,7 +63,7 @@ pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
             Ok(String::from("Force quit command executed"))
         },
         "w" => {
-            let content = text_area.lines().join("\n");
+            let content = editor.rope.to_string();
 
             if mosaic.editors[mosaic.current_editor].file_path.is_none() {
                 if args.len() < 2 {
@@ -84,8 +84,8 @@ pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
         },
         "f" => {
             let search_term = "test";
-            text_area.set_search_pattern(search_term).unwrap();
-            text_area.search_forward(true);
+            //editor.set_search_pattern(search_term).unwrap();
+            //editor.search_forward(true);
 
             Ok(format!("Search pattern set to '{}'", search_term))
         },

@@ -1,5 +1,6 @@
 mod ui;
 mod input;
+mod editor;
 
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
@@ -11,7 +12,7 @@ use std::io::{BufRead, StdoutLock};
 use std::ops::AddAssign;
 use std::str::FromStr;
 use std::{env, fmt, fs, io};
-use tui_textarea::TextArea;
+use crate::editor::Editor;
 
 #[derive(Debug, Copy, Clone)]
 enum Mode {
@@ -60,12 +61,6 @@ impl AddAssign<&str> for Command {
 }
 
 #[derive(Debug)]
-struct Editor<'a> {
-    text_area: TextArea<'a>,
-    file_path: Option<String>,
-}
-
-#[derive(Debug)]
 struct Mosaic<'a> {
     mode: Mode,
     should_quit: bool,
@@ -106,7 +101,7 @@ fn main() -> io::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut file_path: Option<String> = None;
-    let mut text_area = if let Some(path_str) = env::args().nth(1) {
+    /*let mut text_area = if let Some(path_str) = env::args().nth(1) {
         let path = std::path::Path::new(&path_str);
         if path.exists() {
             let file = fs::File::open(path)?;
@@ -124,16 +119,13 @@ fn main() -> io::Result<()> {
                 .collect::<io::Result<_>>()?
         }
     } else {
-        TextArea::default()
-    };
+        panic!("No file path provided, ill fix something later");
+    };*/
 
-    text_area.set_line_number_style(Style::default().fg(Color::DarkGray));
-    text_area.set_tab_length(4);
+    //text_area.set_line_number_style(Style::default().fg(Color::DarkGray));
+    //text_area.set_tab_length(4);
 
-    let mosaic = Mosaic::new(Mode::Normal, Editor {
-        text_area,
-        file_path,
-    });
+    let mosaic = Mosaic::new(Mode::Normal, Editor::new("", None));
 
     let res = run(&mut terminal, mosaic);
 
