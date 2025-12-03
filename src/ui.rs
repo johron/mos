@@ -71,8 +71,8 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
 
     // render cursors
     for cursor in &mosaic.editors[mosaic.current_editor].cursors {
-        let x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
-        let y = chunks[0].y + top_line as u16 + cursor.line as u16;
-        frame.set_cursor_position(Position::new(x, y));
+        let cursor_x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
+        let cursor_y = chunks[0].y + (cursor.line.saturating_sub(top_line)) as u16;
+        frame.set_cursor(cursor_x, cursor_y);
     }
 }

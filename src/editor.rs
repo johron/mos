@@ -286,6 +286,10 @@ impl<'a> Editor<'a> {
     pub fn scroll_down(&mut self) {
         if self.top_line + 1 < self.rope.len_lines() {
             self.top_line += 1;
+
+            if self.cursors[0].line < self.top_line {
+                self.move_cursor(CursorMove::Down);
+            }
         }
     }
 
