@@ -13,8 +13,9 @@ pub(crate) struct Editor<'a> {
     pub(crate) rope: Rope,
     pub(crate) cursors: Vec<Cursor>,
     pub(crate) file_path: Option<String>,
-    show_gutter: bool,
     pub(crate) block: Block<'a>,
+    pub(crate) top_line: usize,
+    show_gutter: bool,
 }
 
 pub enum CursorMove {
@@ -38,6 +39,7 @@ impl<'a> Editor<'a> {
             file_path,
             show_gutter: true,
             block: Block::default(),
+            top_line: 0,
         }
     }
 
@@ -226,26 +228,30 @@ impl<'a> Editor<'a> {
                 self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
             }
             CursorMove::WordBack => {
+                let idx = 0;
                 let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
                 if pos == 0 {
                     // already at start
                 } else {
+                    // step left at least one char
                     pos -= 1;
+                    // skip whitespace going backward
                     while pos > 0 && self.rope.char(pos).is_whitespace() {
                         pos -= 1;
                     }
+                    // move to start of that word
                     while pos > 0 && !self.rope.char(pos - 1).is_whitespace() {
                         pos -= 1;
                     }
                     let line = self.rope.char_to_line(pos);
                     let col = pos - self.rope.line_to_char(line);
-                    // ensure col doesn't exceed visible len
                     self.cursors[idx].line = line;
-                    self.cursors[idx].col = min(col, self.line_visible_len(line));
+                    self.cursors[idx].col = col;
                 }
                 self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
             }
             CursorMove::WordForward => {
+                let idx = 0;
                 let total = self.rope.len_chars();
                 let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
                 if pos < total {
@@ -264,10 +270,22 @@ impl<'a> Editor<'a> {
                     let line = self.rope.char_to_line(pos);
                     let col = pos - self.rope.line_to_char(line);
                     self.cursors[idx].line = line;
-                    self.cursors[idx].col = min(col, self.line_visible_len(line));
+                    self.cursors[idx].col = col;
                 }
                 self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
             }
+        }
+    }
+
+    pub fn scroll_up(&mut self) {
+        if self.top_line > 0 {
+            self.top_line -= 1;
+        }
+    }
+
+    pub fn scroll_down(&mut self) {
+        if self.top_line + 1 < self.rope.len_lines() {
+            self.top_line += 1;
         }
     }
 

@@ -12,17 +12,15 @@ pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
         match key_event {
             KeyEvent { code: KeyCode::Left, modifiers: KeyModifiers::CONTROL, .. } => {
                 text_area.move_cursor(CursorMove::WordBack)
-                //text_area.move_cursor(CursorMove::Back)
             },
             KeyEvent { code: KeyCode::Up, modifiers: KeyModifiers::CONTROL, .. } => {
-                text_area.move_cursor(CursorMove::Up)
+                text_area.scroll_up();
             },
             KeyEvent { code: KeyCode::Down, modifiers: KeyModifiers::CONTROL, .. } => {
-                text_area.move_cursor(CursorMove::Down)
+                text_area.scroll_down();
             },
             KeyEvent { code: KeyCode::Right, modifiers: KeyModifiers::CONTROL, .. } => {
                 text_area.move_cursor(CursorMove::WordForward)
-                //text_area.move_cursor(CursorMove::Forward)
             },
             _ => {
                 // KeyEvent is alphabetic? do here

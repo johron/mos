@@ -47,8 +47,16 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
         .split(size);
 
     // render lines as Spans
+    let top_line = mosaic.editors[mosaic.current_editor].top_line;
     let mut lines_spans: Vec<Line> = Vec::new();
-    for (i, rope_line) in mosaic.editors[mosaic.current_editor].rope.lines().enumerate() {
+    let height = chunks[0].height as usize;
+    let max_line = std::cmp::min(
+        mosaic.editors[mosaic.current_editor].rope.len_lines(),
+        top_line.saturating_add(height),
+    );
+    
+    for i in top_line..max_line {
+        let rope_line = mosaic.editors[mosaic.current_editor].rope.line(i);
         let text_line = rope_line.to_string();
         let spans = highlight_line(&text_line, &rust_keywords, &number_re);
         let mut line_spans = vec![Span::raw(format!("{:4} ", i))]; // small gutter
@@ -64,7 +72,7 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     // render cursors
     for cursor in &mosaic.editors[mosaic.current_editor].cursors {
         let x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
-        let y = chunks[0].y + cursor.line as u16;
+        let y = chunks[0].y + top_line as u16 + cursor.line as u16;
         frame.set_cursor_position(Position::new(x, y));
     }
 }
