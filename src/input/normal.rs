@@ -30,10 +30,10 @@ pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
                 editor.move_cursor(CursorMove::Back)
             },
             KeyEvent { code: KeyCode::Char('k') | KeyCode::Up, modifiers: KeyModifiers::CONTROL, .. } => {
-                editor.move_cursor(CursorMove::Up)
+                editor.scroll_up()
             },
             KeyEvent { code: KeyCode::Char('l') | KeyCode::Down, modifiers: KeyModifiers::CONTROL, .. } => {
-                editor.move_cursor(CursorMove::Down)
+                editor.scroll_down()
             },
             KeyEvent { code: KeyCode::Char('ø') | KeyCode::Right, modifiers: KeyModifiers::CONTROL, .. } => {
                 //editor.move_cursor(CursorMove::WordForward)

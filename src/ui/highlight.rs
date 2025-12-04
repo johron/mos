@@ -26,6 +26,19 @@ pub fn highlight_line(line: &str, rust_kw: &Regex, num_re: &Regex) -> Vec<Span<'
             i += mat.end();
             continue;
         }
+
+        if remainder.starts_with('"') {
+            if let Some(end_quote_pos) = remainder[1..].find('"') {
+                let str_literal = &remainder[..=end_quote_pos + 1];
+                spans.push(Span::styled(
+                    str_literal.to_string(),
+                    Style::default().fg(ratatui::style::Color::Rgb(106, 153, 85)),
+                ));
+                i += str_literal.len();
+                continue;
+            }
+        }
+
         // nothing matched at start, push one char and continue
         let ch = remainder.chars().next().unwrap();
         spans.push(Span::raw(ch.to_string()));
