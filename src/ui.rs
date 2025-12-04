@@ -48,7 +48,7 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     // render lines as Spans
     let top_line = mosaic.editors[mosaic.current_editor].top_line;
     let mut lines_spans: Vec<Line> = Vec::new();
-    let height = chunks[0].height as usize;
+    let height = chunks[0].height as usize - 1;
 
     mosaic.editors[mosaic.current_editor].height = height;
 

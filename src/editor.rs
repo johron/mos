@@ -130,6 +130,7 @@ impl<'a> Editor<'a> {
 
             *cur = Self::clamp_cursor(&self.rope, cur.clone());
         }
+        self.update_scroll(0);
     }
 
     fn update_scroll(&mut self, idx: usize) {
