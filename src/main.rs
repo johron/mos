@@ -1,6 +1,7 @@
 mod ui;
 mod input;
 mod editor;
+mod handler;
 
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
@@ -12,7 +13,9 @@ use std::io::{BufRead, StdoutLock};
 use std::ops::AddAssign;
 use std::str::FromStr;
 use std::{env, fmt, fs, io};
+use std::time::{Duration, Instant};
 use crate::editor::Editor;
+use crate::handler::config_handler::ConfigHandler;
 
 #[derive(Debug, Copy, Clone)]
 enum Mode {
@@ -61,10 +64,18 @@ impl AddAssign<&str> for Command {
 }
 
 #[derive(Debug)]
+struct Toast {
+    message: String,
+    start_time: Instant,
+    duration: Duration,
+}
+
+#[derive(Debug)]
 struct Mosaic<'a> {
     mode: Mode,
     should_quit: bool,
     command: Command,
+    toast: Option<Toast>,
     editors: Vec<Editor<'a>>,
     current_editor: usize,
 }
@@ -75,6 +86,7 @@ impl<'a> Mosaic<'a> {
             mode,
             should_quit: false,
             command: Command::new(),
+            toast: None,
             editors: vec![editor],
             current_editor: 0,
         }
@@ -87,6 +99,16 @@ impl<'a> Mosaic<'a> {
 
     fn quit(&mut self) {
         self.should_quit = true;
+    }
+
+    fn show_toast(&mut self, message: &str, duration: Duration) {
+        let toast = Toast {
+            message: message.to_string(),
+            start_time: Instant::now(),
+            duration,
+        };
+
+        self.toast = Some(toast);
     }
 }
 
@@ -120,6 +142,10 @@ fn main() -> io::Result<()> {
 
     let mosaic = Mosaic::new(Mode::Normal, Editor::new(initial_content.as_str(), file_path));
 
+    let command_handler = handler::command_handler::CommandHandler::new();
+    let mut config_handler = ConfigHandler::new(command_handler);
+    config_handler.load_config();
+
     let res = run(&mut terminal, mosaic);
 
     disable_raw_mode()?;
@@ -138,6 +164,13 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic
         terminal.draw(|frame| {
             ui::draw(frame, &mut mosaic); // pass immutable state
         })?;
+
+        if mosaic.toast.is_some() {
+            let toast = mosaic.toast.as_ref().unwrap();
+            if toast.start_time.elapsed() >= toast.duration {
+                mosaic.toast = None;
+            }
+        }
 
         input::handle(&mut mosaic).expect("TODO: panic message");
 

@@ -7,3 +7,28 @@
 ## InDev images
 <img width="974" height="552" alt="image" src="https://github.com/user-attachments/assets/e76cb7b1-5552-450e-be04-914244fde3a8" />
 <img width="949" height="577" alt="image" src="https://github.com/user-attachments/assets/dd3552fd-8ca6-4611-b403-4b5bcbf1d322" />
+
+## Config (will look something like this)
+```toml
+[editor]
+tab_size = 4
+show_gutter = true
+
+[keybindings]
+[keybindings.normal]
+left = "j|left"
+right = "ø|right"
+up = "k|up"
+down = "l|down"
+
+[keybindings.insert]
+left = "left"
+right = "right"
+up = "up"
+down = "down"
+
+[keybindings.command]
+left = "left"
+right = "right"
+
+```

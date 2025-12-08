@@ -72,10 +72,35 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
 
     frame.render_widget(paragraph, chunks[0]);
 
+    if let Some(toast) = &mosaic.toast {
+        let (toast_paragraph, toast_area) = draw_toast(frame.area(), &toast.message);
+        frame.render_widget(toast_paragraph, toast_area);
+    }
+
     // render cursors
     for cursor in &mosaic.editors[mosaic.current_editor].cursors {
         let cursor_x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
         let cursor_y = chunks[0].y + (cursor.line.saturating_sub(top_line)) as u16;
         frame.set_cursor_position(Position::new(cursor_x, cursor_y));
     }
+}
+
+fn draw_toast(area: Rect, message: &str) -> (Paragraph, Rect) {
+    let size = area;
+    let block = Block::new()
+        .borders(Borders::ALL)
+        .title("Mosaic")
+        .title_alignment(Alignment::Center);
+    let paragraph = Paragraph::new(message.to_string())
+        .block(block)
+        .alignment(Alignment::Center);
+
+    let area = Rect {
+        x: size.x + size.width / 4,
+        y: size.y + size.height / 3,
+        width: size.width / 2,
+        height: size.height / 6,
+    };
+
+    (paragraph, area)
 }

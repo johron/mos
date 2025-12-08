@@ -1,4 +1,5 @@
 use std::io::Error;
+use std::time::Duration;
 use crossterm::event::{KeyCode, KeyEvent};
 use crate::{Command, Mode, Mosaic};
 
@@ -88,6 +89,15 @@ pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
             //editor.search_forward(true);
 
             Ok(format!("Search pattern set to '{}'", search_term))
+        },
+        "toast" => {
+            if args.len() >= 2 {
+                let message = args[1..].join(" ");
+                mosaic.show_toast(&message, Duration::from_secs(3));
+                Ok(format!("Toast message set: {}", message))
+            } else {
+                Err(Error::new(std::io::ErrorKind::Other, "No toast message provided"))
+            }
         },
         _ => {
             if args[0].starts_with("2") {

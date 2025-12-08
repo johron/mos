@@ -13,8 +13,10 @@ use crate::editor::CursorMove;
 static MOS_PREFIX: OnceLock<Mutex<Option<Instant>>> = OnceLock::new();
 
 pub fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
-    if event::poll(std::time::Duration::from_millis(10))? {
+    if event::poll(Duration::from_millis(10))? {
         if let Event::Key(key_event) = event::read()? {
+            mosaic.toast = None;
+
             process_key(mosaic, key_event);
         }
     }
