@@ -4,7 +4,7 @@ use crate::input::handle_non_modifier;
 use crate::Mosaic;
 
 pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
-    let text_area = &mut mosaic.editors[mosaic.current_editor];
+    let text_area = &mut mosaic.editor;
 
     if key_event.modifiers.is_empty() {
         handle_non_modifier(mosaic, key_event);

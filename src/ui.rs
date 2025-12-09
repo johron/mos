@@ -11,7 +11,7 @@ use regex::Regex;
 use crate::ui::highlight::highlight_line;
 
 pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
-    mosaic.editors[mosaic.current_editor].set_block(
+    mosaic.editor.set_block(
         match mosaic.mode {
             Mode::Normal => {
                 if mosaic.command.result.is_some() {
@@ -46,19 +46,19 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
         .split(size);
 
     // render lines as Spans
-    let top_line = mosaic.editors[mosaic.current_editor].top_line;
+    let top_line = mosaic.editor.top_line;
     let mut lines_spans: Vec<Line> = Vec::new();
     let height = chunks[0].height as usize - 1;
 
-    mosaic.editors[mosaic.current_editor].height = height;
+    mosaic.editor.height = height;
 
     let max_line = std::cmp::min(
-        mosaic.editors[mosaic.current_editor].rope.len_lines(),
+        mosaic.editor.rope.len_lines(),
         top_line.saturating_add(height),
     );
     
     for i in top_line..max_line {
-        let rope_line = mosaic.editors[mosaic.current_editor].rope.line(i);
+        let rope_line = mosaic.editor.rope.line(i);
         let text_line = rope_line.to_string();
         let spans = highlight_line(&text_line, &rust_keywords, &number_re);
         let mut line_spans = vec![Span::raw(format!("{:4} ", i))]; // small gutter
@@ -68,7 +68,7 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     }
 
     let paragraph = Paragraph::new(lines_spans)
-        .block(mosaic.editors[mosaic.current_editor].block.clone());
+        .block(mosaic.editor.block.clone());
 
     frame.render_widget(paragraph, chunks[0]);
 
@@ -78,7 +78,7 @@ pub fn draw(frame: &mut Frame, mosaic: &mut Mosaic) {
     }
 
     // render cursors
-    for cursor in &mosaic.editors[mosaic.current_editor].cursors {
+    for cursor in &mosaic.editor.cursors {
         let cursor_x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
         let cursor_y = chunks[0].y + (cursor.line.saturating_sub(top_line)) as u16;
         frame.set_cursor_position(Position::new(cursor_x, cursor_y));

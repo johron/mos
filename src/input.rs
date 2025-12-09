@@ -25,7 +25,7 @@ pub fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
 }
 
 fn process_key(mosaic: &mut Mosaic, key: KeyEvent) {
-    const PREFIX_TIMEOUT: Duration = Duration::from_millis(500);
+    /*const PREFIX_TIMEOUT: Duration = Duration::from_millis(500);
 
     let prefix_lock = MOS_PREFIX.get_or_init(|| Mutex::new(None));
     let mut guard = prefix_lock.lock().unwrap();
@@ -64,7 +64,7 @@ fn process_key(mosaic: &mut Mosaic, key: KeyEvent) {
             // prefix timed out
             *guard = None;
         }
-    }
+    }*/
 
     // Fallback to normal mode-specific handling
     match mosaic.mode {
@@ -75,7 +75,7 @@ fn process_key(mosaic: &mut Mosaic, key: KeyEvent) {
 }
 
 fn handle_non_modifier(mosaic: &mut Mosaic, key_event: KeyEvent) {
-    let editor = &mut mosaic.editors[mosaic.current_editor];
+    let editor = &mut mosaic.editor;
     match key_event.code {
         KeyCode::Esc => mosaic.set_mode(Mode::Normal),
         KeyCode::Tab => editor.tab(),

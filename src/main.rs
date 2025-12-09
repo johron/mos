@@ -76,19 +76,22 @@ struct Mosaic<'a> {
     should_quit: bool,
     command: Command,
     toast: Option<Toast>,
-    editors: Vec<Editor<'a>>,
+    editor: Editor<'a>,
     current_editor: usize,
+
+    config_handler: &'a mut ConfigHandler
 }
 
 impl<'a> Mosaic<'a> {
-    fn new(mode: Mode, editor: Editor<'a>) -> Self {
+    fn new(mode: Mode, config_handler: &'a mut ConfigHandler, editor: Editor<'a>) -> Self {
         Self {
             mode,
             should_quit: false,
             command: Command::new(),
             toast: None,
-            editors: vec![editor],
+            editor,
             current_editor: 0,
+            config_handler,
         }
     }
 
@@ -109,6 +112,14 @@ impl<'a> Mosaic<'a> {
         };
 
         self.toast = Some(toast);
+    }
+
+    fn init(&mut self) {
+        self.editor.register_shortcuts(&mut self.config_handler);
+    }
+    
+    fn reload(&mut self) {
+        self.config_handler.load_config();
     }
 }
 
@@ -140,11 +151,13 @@ fn main() -> io::Result<()> {
     //text_area.set_line_number_style(Style::default().fg(Color::DarkGray));
     //text_area.set_tab_length(4);
 
-    let mosaic = Mosaic::new(Mode::Normal, Editor::new(initial_content.as_str(), file_path));
-
     let command_handler = handler::command_handler::CommandHandler::new();
-    let mut config_handler = ConfigHandler::new(command_handler);
+    let shortcut_handler = handler::shortcut_handler::ShortcutHandler::new();
+    let mut config_handler = ConfigHandler::new(command_handler, shortcut_handler);
     config_handler.load_config();
+
+    let mut mosaic = Mosaic::new(Mode::Normal, &mut config_handler, Editor::new(initial_content.as_str(), file_path));
+    mosaic.init();
 
     let res = run(&mut terminal, mosaic);
 

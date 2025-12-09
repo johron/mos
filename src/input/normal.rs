@@ -3,7 +3,7 @@ use crate::{Mode, Mosaic};
 use crate::editor::CursorMove;
 
 pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
-    let editor = &mut mosaic.editors[mosaic.current_editor];
+    let editor = &mut mosaic.editor;
 
     if key_event.modifiers.is_empty() {
         match key_event.code {

@@ -1,6 +1,7 @@
 use std::cmp::min;
 use ratatui::widgets::Block;
 use ropey::Rope;
+use crate::handler::config_handler::ConfigHandler;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Cursor {
@@ -347,5 +348,12 @@ impl<'a> Editor<'a> {
 
     fn toggle_gutter(&mut self) {
         self.show_gutter = !self.show_gutter;
+    }
+
+    pub fn register_shortcuts(&mut self, config_handler: &mut ConfigHandler) {
+        let shortcut_handler = &mut config_handler.shortcut_handler;
+        let editor = &config_handler.config.editor;
+
+        shortcut_handler.register_shortcut(String::from("editor.enter_normal_mode"), editor.shortcuts.enter_normal_mode.clone(), todo!());
     }
 }

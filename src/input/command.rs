@@ -30,14 +30,14 @@ pub fn handle_mode(mosaic: &mut Mosaic, key: KeyEvent) {
 }
 
 pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
-    let editor = &mut mosaic.editors[mosaic.current_editor];
+    let editor = &mut mosaic.editor;
     let args = mosaic.command.content.as_str().split(' ').collect::<Vec<_>>();
 
     match args[0] {
         "q" => {
             let current_content = editor.rope.to_string();
 
-            if let Some(path) = mosaic.editors[mosaic.current_editor].file_path.as_ref() {
+            if let Some(path) = mosaic.editor.file_path.as_ref() {
                 match std::fs::read_to_string(path) {
                     Ok(disk) => {
                         if disk != current_content {
@@ -66,15 +66,15 @@ pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
         "w" => {
             let content = editor.rope.to_string();
 
-            if mosaic.editors[mosaic.current_editor].file_path.is_none() { // TOOO: arg isnt prioritized, i need to fix, but i tried and this no
+            if mosaic.editor.file_path.is_none() { // TOOO: arg isnt prioritized, i need to fix, but i tried and this no
                 if args.len() >= 2 {
-                    mosaic.editors[mosaic.current_editor].file_path = Some(args[1].to_string());
-                } else if mosaic.editors[mosaic.current_editor].file_path.is_none() {
+                    mosaic.editor.file_path = Some(args[1].to_string());
+                } else if mosaic.editor.file_path.is_none() {
                     return Err(Error::new(std::io::ErrorKind::Other, "No file path provided"));
                 }
             }
 
-            let file_path = mosaic.editors[mosaic.current_editor]
+            let file_path = mosaic.editor
                 .file_path
                 .as_ref()
                 .unwrap();
