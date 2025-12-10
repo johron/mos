@@ -1,20 +1,20 @@
 use crate::Mosaic;
 
-#[derive(Debug)]
-struct CommandSpace {
+#[derive(Debug, Clone)]
+pub struct CommandSpace {
     name: String,
     commands: Vec<Command>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct Command {
     pub(crate) name: String,
-    pub(crate) handler: fn(&mut Mosaic, Vec<&str>) -> Result<String, String>,
+    pub(crate) handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct CommandHandler {
-    spaces: Vec<CommandSpace>,
+    pub(crate) spaces: Vec<CommandSpace>,
 }
 
 impl CommandHandler {
@@ -45,7 +45,12 @@ impl CommandHandler {
         }
     }
 
-    pub fn register_command(&mut self, command: Command, namespace: &str) {
+    pub fn register_command(&mut self, name: String, namespace: &str, handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>) {
+        let command = Command {
+            name,
+            handler,
+        };
+
         if let Some(space) = self.spaces.iter_mut().find(|space| space.name == namespace) {
             space.commands.push(command);
         } else {
@@ -57,7 +62,7 @@ impl CommandHandler {
         }
     }
     
-    pub fn handle_command(&self, namespace: &str, command_name: &str, mosaic: &mut Mosaic, args: Vec<&str>) -> Option<Result<String, String>> {
+    pub fn handle_command(&self, namespace: &str, command_name: &str, mosaic: &mut Mosaic, args: Vec<String>) -> Option<Result<String, String>> {
         if let Some(space) = self.spaces.iter().find(|space| space.name == namespace) {
             if let Some(command) = space.commands.iter().find(|cmd| cmd.name == command_name) {
                 return Some((command.handler)(mosaic, args));

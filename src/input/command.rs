@@ -29,7 +29,24 @@ pub fn handle_mode(mosaic: &mut Mosaic, key: KeyEvent) {
     }
 }
 
-pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
+pub fn handle_command(mosaic: &mut Mosaic) -> Result<String, String> {
+    let editor = &mut mosaic.editor;
+    let args = mosaic.command.content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
+
+    let commands = mosaic.command_handler.get_commands("@");
+
+     if let Some(cmds) = commands {
+        if let Some(command) = cmds.iter().find(|cmd| cmd.name == args[0]) {
+            (command.handler)(mosaic, args)
+        } else {
+            Err(format!("Unknown command: {}", args[0]))
+        }
+    } else {
+        Err(String::from("No command namespace found"))
+    }
+}
+
+pub(crate) fn _handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
     let editor = &mut mosaic.editor;
     let args = mosaic.command.content.as_str().split(' ').collect::<Vec<_>>();
 
@@ -56,11 +73,11 @@ pub(crate) fn handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
                 }
             }
 
-            mosaic.quit();
+            //mosaic.quit();
             Ok(String::from("Quit command executed"))
         },
         "q!" => {
-            mosaic.quit();
+            //mosaic.quit();
             Ok(String::from("Force quit command executed"))
         },
         "w" => {

@@ -37,7 +37,7 @@ impl Display for Mode {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Command {
     content: String,
     result: Option<String>,
@@ -66,14 +66,14 @@ impl AddAssign<&str> for Command {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Toast {
     message: String,
     start_time: Instant,
     duration: Duration,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Mosaic<'a> {
     mode: Mode,
     should_quit: bool,
@@ -108,8 +108,9 @@ impl<'a> Mosaic<'a> {
         self.command.clear();
     }
 
-    fn quit(&mut self) {
-        self.should_quit = true;
+    fn quit(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
+        mosaic.should_quit = true;
+        Ok(String::from("Quitting Mosaic..."))
     }
 
     fn show_toast(&mut self, message: &str, duration: Duration) {
@@ -124,8 +125,15 @@ impl<'a> Mosaic<'a> {
 
     fn init(&mut self) {
         self.config_handler.load_config();
+        self.register_commands();
 
         self.editor.register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
+    }
+
+    fn register_commands(&mut self) {
+        self.editor.register_commands(&mut self.command_handler, &mut self.config_handler);
+
+        self.command_handler.register_command(String::from("q"), "@", Self::quit);
     }
     
     fn reload(&mut self) {

@@ -1,6 +1,7 @@
 use std::cmp::min;
 use ratatui::widgets::Block;
 use ropey::Rope;
+use crate::handler::command_handler::CommandHandler;
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::shortcut_handler::ShortcutHandler;
 use crate::Mosaic;
@@ -12,6 +13,7 @@ pub(crate) struct Cursor {
 }
 
 #[derive(Debug)]
+#[derive(Clone)]
 pub(crate) struct Editor<'a> {
     pub(crate) rope: Rope,
     pub(crate) cursors: Vec<Cursor>,
@@ -356,6 +358,12 @@ impl<'a> Editor<'a> {
         let editor = &config_handler.config.editor;
 
         shortcut_handler.register_shortcut(String::from("editor.enter_normal_mode"), editor.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+    }
+
+    pub fn register_commands(&mut self, command_handler: &mut CommandHandler, config_handler: &mut ConfigHandler) {
+        command_handler.register_command(String::from("test"),"@", |mosaic: &mut Mosaic, args: Vec<String>| {
+            Ok(String::from("Test command executed"))
+        });
     }
 
     fn enter_normal_mode(mosaic: &mut Mosaic) -> Result<String, String> {

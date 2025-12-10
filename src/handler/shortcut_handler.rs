@@ -1,14 +1,14 @@
 use crate::handler::command_handler::CommandHandler;
 use crate::Mosaic;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Shortcut {
     pub name: String,
     pub input: String,
     pub handler: fn(&mut Mosaic) -> Result<String, String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ShortcutHandler {
     shortcuts: Vec<Shortcut>,
 }

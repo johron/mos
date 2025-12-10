@@ -4,7 +4,7 @@ use crate::{ui, Mosaic};
 use crate::handler::command_handler::{Command, CommandHandler};
 use crate::handler::shortcut_handler::ShortcutHandler;
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Config {
     pub mosaic: MosaicConfig,
     pub editor: EditorConfig,
@@ -19,7 +19,7 @@ impl Default for Config {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct MosaicConfig {
     pub auto_save: bool,
     pub save_interval: usize,
@@ -34,7 +34,7 @@ impl Default for MosaicConfig {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct EditorConfig {
     pub show_gutter: bool,
     pub tab_size: usize,
@@ -62,6 +62,7 @@ impl Default for EditorConfig {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Clone)]
 pub struct EditorShortcuts {
     pub enter_normal_mode: String,
 }
@@ -74,7 +75,7 @@ impl Default for EditorShortcuts {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct NormalModeConfig {
     pub highlight_current_line: bool,
     pub shortcuts: NormalModeShortcuts,
@@ -89,7 +90,7 @@ impl Default for NormalModeConfig {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct NormalModeShortcuts {
     pub enter_insert_mode: String,
     pub enter_command_mode: String,
@@ -114,7 +115,7 @@ impl Default for NormalModeShortcuts {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct InsertModeConfig {
     pub shortcuts: InsertModeShortcuts,
 }
@@ -127,7 +128,7 @@ impl Default for InsertModeConfig {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct InsertModeShortcuts {
     pub move_left: String,
     pub move_right: String,
@@ -166,7 +167,7 @@ impl Default for InsertModeShortcuts {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CommandModeConfig {
     pub shortcuts: CommandModeShortcuts,
 }
@@ -179,7 +180,7 @@ impl Default for CommandModeConfig {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CommandModeShortcuts {
     pub move_left: String,
     pub move_right: String,
@@ -200,7 +201,7 @@ impl CommandModeShortcuts {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct ConfigHandler {
     pub config: Config,
 }
