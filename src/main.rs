@@ -80,7 +80,6 @@ struct Toast {
 #[derive(Debug, Clone)]
 struct Mosaic{
     toast: Option<Toast>,
-    current_editor: usize,
 
     panel_handler: PanelHandler,
     state_handler: StateHandler,
@@ -93,7 +92,6 @@ impl Mosaic {
     fn new() -> Self {
         Self {
             toast: None,
-            current_editor: 0,
 
             panel_handler: PanelHandler::new(),
             state_handler: StateHandler::new(),
@@ -117,9 +115,11 @@ impl Mosaic {
         self.panel_handler.add_panel(
             Panel::new(String::from("editor_1"), PanelChild::Editor(EditorPanel::new()))
         );
-            
-            
+        self.panel_handler.set_current_panel(Some(String::from("editor_1")));
+
         self.config_handler.load_config();
+        // Set state and editor config based on config ^
+
         self.register_commands();
 
         //self.editor.register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
@@ -188,7 +188,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic
     loop {
         terminal.draw(|frame| {
             //ui::draw(frame, &mut mosaic); // pass immutable state
-            
+
             for panel in &mut mosaic.panel_handler.panels {
                 match &mut panel.child {
                     PanelChild::Editor(editor_panel) => {

@@ -40,6 +40,10 @@ impl PanelHandler {
         }
     }
     
+    pub fn set_current_panel(&mut self, id: Option<String>) {
+        self.current_panel_id = id;
+    }
+    
     pub fn add_panel(&mut self, panel: Panel) {
         self.panels.push(panel);
     }

@@ -80,7 +80,7 @@ fn handle_non_modifier(mosaic: &mut Mosaic, key_event: KeyEvent) {
     }
 
     let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
-    
+
     match key_event.code {
         KeyCode::Esc => mosaic.state_handler.mode = Mode::Normal,
         KeyCode::Tab => editor.tab(),
