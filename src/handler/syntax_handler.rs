@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use ratatui::crossterm::style::Color;
-use ratatui::text::Span;
+use ratatui::text::{Line, Span};
+use ropey::Rope;
 
 #[derive(Debug, Clone)]
 pub struct SyntaxHandler {
@@ -95,140 +96,200 @@ impl SyntaxConfig {
         }
     }
 
-    pub(crate) fn highlight_line(&self, line: String) -> Vec<Span<'static>> {
-        let mut spans: Vec<Span> = Vec::new();
-        let mut pos: usize = 0;
-        let len = line.len();
+    pub(crate) fn highlight_line(&self, top_line: usize, max_line: usize, rope: &Rope) -> Vec<Line<'static>> {
+        let mut lines_spans: Vec<Line> = Vec::new();
 
         use ratatui::style::{Color, Style};
+
         let kw_style = Style::default().fg(Color::Rgb(199, 120, 70));
         let comment_style = Style::default().fg(Color::Gray);
         let string_style = Style::default().fg(Color::Rgb(106, 153, 85));
         let number_style = Style::default().fg(Color::Cyan);
+        let gutter_style = Style::default().fg(Color::Gray);
 
-        while pos < len {
-            let rest = &line[pos..];
+        // state that can span multiple lines
+        let mut in_comment_end: Option<String> = None;
+        let mut in_string_end: Option<String> = None;
 
-            // single-line comment
-            // comments (single-line or multi-line) - check each delimiter pair
-            let mut handled_comment = false;
-            for (start_delim, end_delim) in &self.comment_delimiters {
-                if rest.starts_with(start_delim) {
-                    // single-line style where end delimiter is newline in config
-                    if end_delim == "\n" {
-                        spans.push(Span::styled(rest.to_string(), comment_style));
-                        return spans;
-                    }
+        for i in top_line..max_line {
+            let rope_line = rope.line(i);
+            let line = rope_line.to_string();
+            let len = line.len();
+            let mut spans: Vec<Span> = Vec::new();
+            let mut pos: usize = 0;
 
-                    // multi-line style with explicit end delimiter
-                    let after = &rest[start_delim.len()..];
-                    if let Some(rel_end) = after.find(end_delim) {
-                        let end_pos = pos + start_delim.len() + rel_end + end_delim.len();
-                        let slice = &line[pos..end_pos];
-                        spans.push(Span::styled(slice.to_string(), comment_style));
-                        pos = end_pos;
-                        handled_comment = true;
-                        break;
-                    } else {
-                        // till end of line
-                        spans.push(Span::styled(rest.to_string(), comment_style));
-                        return spans;
-                    }
+            // If we are already inside a multi-line comment, try to close it on this line
+            if let Some(end_delim) = in_comment_end.as_ref() {
+                if let Some(rel_end) = line.find(end_delim) {
+                    let end_pos = rel_end + end_delim.len();
+                    let slice = &line[..end_pos];
+                    spans.push(Span::styled(slice.to_string(), comment_style));
+                    pos = end_pos;
+                    in_comment_end = None;
+                } else {
+                    // whole line is comment
+                    spans.push(Span::styled(line.clone(), comment_style));
+                    let mut line_spans = vec![Span::styled(format!("{:4} ", i), gutter_style)];
+                    line_spans.extend(spans);
+                    lines_spans.push(Line::from(line_spans));
+                    continue;
                 }
             }
-            if handled_comment {
-                continue;
-            }
-            // strings (check each delimiter pair)
-            let mut handled_string = false;
-            for (s_start, s_end) in &self.string_delimiters {
-                if rest.starts_with(s_start) {
-                    let after = &rest[s_start.len()..];
-                    if let Some(rel_end) = after.find(s_end) {
-                        let end_pos = pos + s_start.len() + rel_end + s_end.len();
+
+            // If we are already inside a multi-line string, try to close it on this line
+            if in_string_end.is_some() && pos < len {
+                if let Some(end_delim) = in_string_end.as_ref() {
+                    if let Some(rel_end) = line[pos..].find(end_delim) {
+                        let end_pos = pos + rel_end + end_delim.len();
                         let slice = &line[pos..end_pos];
                         spans.push(Span::styled(slice.to_string(), string_style));
                         pos = end_pos;
-                        handled_string = true;
-                        break;
+                        in_string_end = None;
                     } else {
-                        // till end of line
-                        spans.push(Span::styled(rest.to_string(), string_style));
-                        pos = len;
-                        handled_string = true;
-                        break;
+                        // rest of line is string
+                        let slice = &line[pos..];
+                        spans.push(Span::styled(slice.to_string(), string_style));
+                        let mut line_spans = vec![Span::styled(format!("{:4} ", i), gutter_style)];
+                        line_spans.extend(spans);
+                        lines_spans.push(Line::from(line_spans));
+                        continue;
                     }
                 }
             }
-            if handled_string {
-                continue;
-            }
 
-            // whitespace
-            let mut ch_iter = rest.chars();
-            if let Some(ch) = ch_iter.next() {
-                if ch.is_whitespace() {
-                    let mut end = pos;
-                    for (i, c) in line[pos..].char_indices() {
-                        if !c.is_whitespace() {
-                            end = pos + i;
+            while pos < len {
+                let rest = &line[pos..];
+
+                // comments (single-line or multi-line) - check each delimiter pair
+                let mut handled_comment = false;
+                for (start_delim, end_delim) in &self.comment_delimiters {
+                    if rest.starts_with(start_delim) {
+                        // single-line style where end delimiter is newline in config
+                        if end_delim == "\n" {
+                            spans.push(Span::styled(rest.to_string(), comment_style));
+                            pos = len;
+                            handled_comment = true;
                             break;
                         }
-                        // if we reached the end without breaking, set end to len
-                        end = len;
+
+                        // multi-line style with explicit end delimiter
+                        let after = &rest[start_delim.len()..];
+                        if let Some(rel_end) = after.find(end_delim) {
+                            let end_pos = pos + start_delim.len() + rel_end + end_delim.len();
+                            let slice = &line[pos..end_pos];
+                            spans.push(Span::styled(slice.to_string(), comment_style));
+                            pos = end_pos;
+                            handled_comment = true;
+                            break;
+                        } else {
+                            // till end of line and set state to continue next lines
+                            spans.push(Span::styled(rest.to_string(), comment_style));
+                            in_comment_end = Some(end_delim.clone());
+                            pos = len;
+                            handled_comment = true;
+                            break;
+                        }
                     }
-                    let slice = &line[pos..end];
-                    spans.push(Span::raw(slice.to_string()));
-                    pos = end;
+                }
+                if handled_comment {
                     continue;
                 }
 
-                // numbers
-                if ch.is_ascii_digit() {
-                    let mut end = pos;
-                    for (i, c) in line[pos..].char_indices() {
-                        if !(c.is_ascii_digit() || c == '.' || c == '_') {
-                            end = pos + i;
+                // strings (check each delimiter pair)
+                let mut handled_string = false;
+                for (s_start, s_end) in &self.string_delimiters {
+                    if rest.starts_with(s_start) {
+                        let after = &rest[s_start.len()..];
+                        if let Some(rel_end) = after.find(s_end) {
+                            let end_pos = pos + s_start.len() + rel_end + s_end.len();
+                            let slice = &line[pos..end_pos];
+                            spans.push(Span::styled(slice.to_string(), string_style));
+                            pos = end_pos;
+                            handled_string = true;
+                            break;
+                        } else {
+                            // till end of line and remember to continue string
+                            spans.push(Span::styled(rest.to_string(), string_style));
+                            in_string_end = Some(s_end.clone());
+                            pos = len;
+                            handled_string = true;
                             break;
                         }
-                        end = len;
                     }
-                    let slice = &line[pos..end];
-                    spans.push(Span::styled(slice.to_string(), number_style));
-                    pos = end;
+                }
+                if handled_string {
                     continue;
                 }
 
-                // word (identifier / keyword)
-                if ch.is_alphanumeric() || ch == '_' {
-                    let mut end = pos;
-                    for (i, c) in line[pos..].char_indices() {
-                        if !(c.is_alphanumeric() || c == '_') {
-                            end = pos + i;
-                            break;
+                // whitespace
+                let mut ch_iter = rest.chars();
+                if let Some(ch) = ch_iter.next() {
+                    if ch.is_whitespace() {
+                        let mut end = pos;
+                        for (j, c) in line[pos..].char_indices() {
+                            if !c.is_whitespace() {
+                                end = pos + j;
+                                break;
+                            }
+                            end = len;
                         }
-                        end = len;
-                    }
-                    let slice = &line[pos..end];
-                    if self.keywords.contains(&slice.to_string()) {
-                        spans.push(Span::styled(slice.to_string(), kw_style));
-                    } else {
+                        let slice = &line[pos..end];
                         spans.push(Span::raw(slice.to_string()));
+                        pos = end;
+                        continue;
                     }
-                    pos = end;
-                    continue;
-                }
 
-                // any other single char (punctuation, etc.)
-                let ch_len = ch.len_utf8();
-                let slice = &line[pos..pos + ch_len];
-                spans.push(Span::raw(slice.to_string()));
-                pos += ch_len;
-            } else {
-                break;
+                    // numbers
+                    if ch.is_ascii_digit() {
+                        let mut end = pos;
+                        for (j, c) in line[pos..].char_indices() {
+                            if !(c.is_ascii_digit() || c == '.' || c == '_') {
+                                end = pos + j;
+                                break;
+                            }
+                            end = len;
+                        }
+                        let slice = &line[pos..end];
+                        spans.push(Span::styled(slice.to_string(), number_style));
+                        pos = end;
+                        continue;
+                    }
+
+                    // word (identifier / keyword)
+                    if ch.is_alphanumeric() || ch == '_' {
+                        let mut end = pos;
+                        for (j, c) in line[pos..].char_indices() {
+                            if !(c.is_alphanumeric() || c == '_') {
+                                end = pos + j;
+                                break;
+                            }
+                            end = len;
+                        }
+                        let slice = &line[pos..end];
+                        if self.keywords.contains(&slice.to_string()) {
+                            spans.push(Span::styled(slice.to_string(), kw_style));
+                        } else {
+                            spans.push(Span::raw(slice.to_string()));
+                        }
+                        pos = end;
+                        continue;
+                    }
+
+                    // any other single char (punctuation, etc.)
+                    let ch_len = ch.len_utf8();
+                    let slice = &line[pos..pos + ch_len];
+                    spans.push(Span::raw(slice.to_string()));
+                    pos += ch_len;
+                } else {
+                    break;
+                }
             }
+
+            let mut line_spans = vec![Span::styled(format!("{:4} ", i), gutter_style)]; // small gutter
+            line_spans.extend(spans);
+            lines_spans.push(Line::from(line_spans));
         }
 
-        spans
+        lines_spans
     }
 }

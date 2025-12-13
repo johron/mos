@@ -3,6 +3,7 @@ use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Direction, Layout, Position};
 use ratatui::prelude::{Color, Line, Span};
 use ratatui::widgets::{Block, Paragraph};
+use ropey::Rope;
 use crate::editor::Editor;
 use crate::handler::state_handler::StateHandler;
 use crate::handler::syntax_handler::SyntaxHandler;
@@ -56,7 +57,6 @@ impl EditorPanel {
             .split(size);
 
         let top_line = self.editor.top_line;
-        let mut lines_spans: Vec<Line> = Vec::new();
         let height = chunks[0].height as usize - 1;
 
         self.editor.height = height;
@@ -67,16 +67,7 @@ impl EditorPanel {
             top_line.saturating_add(height),
         );
 
-        for i in top_line..max_line {
-            let rope_line = self.editor.rope.line(i);
-            let text_line = rope_line.to_string();
-            // convert text_line to spans, do not highlight for now
-            let spans = self.highlight_line(text_line);
-            let mut line_spans = vec![Span::styled(format!("{:4} ", i), ratatui::style::Style::default().fg(Color::Gray))]; // small gutter
-
-            line_spans.extend(spans);
-            lines_spans.push(Line::from(line_spans));
-        }
+        let lines_spans: Vec<Line> = self.highlight_line(top_line, max_line, self.editor.rope.clone());
 
         // Have to think about how I can to the multiple editor panels later, block should be set from outside, not in editor panel
         let paragraph = Paragraph::new(lines_spans)
@@ -92,7 +83,7 @@ impl EditorPanel {
         }
     }
 
-    fn highlight_line(&mut self, line: String) -> Vec<Span<'static>> {
-        self.syntax_handler.configs.first().unwrap().highlight_line(line)
+    fn highlight_line(&mut self, top_line: usize, max_line: usize, rope: Rope) -> Vec<Line> {
+        self.syntax_handler.configs.first().unwrap().highlight_line(top_line, max_line, &rope)
     }
 }
