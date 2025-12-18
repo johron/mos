@@ -34,6 +34,10 @@ pub fn handle_command(mosaic: &mut Mosaic) -> Result<String, String> {
 
     let commands = mosaic.command_handler.get_commands("@");
 
+    if args.is_empty() || args[0].is_empty() {
+        return Err(String::from("No command provided"));
+    }
+
      if let Some(cmds) = commands {
         if let Some(command) = cmds.iter().find(|cmd| cmd.name == args[0]) {
             (command.handler)(mosaic, args)
