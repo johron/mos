@@ -18,9 +18,9 @@ impl SyntaxHandler {
     }
 
     pub fn get_syntax_by_extension(&self, extension: &str) -> Option<&SyntaxConfig> {
-        for config in &self.configs {
-            if config.extension == extension {
-                return Some(config);
+        for (i, entry) in self.syntax_entry_config.iter().enumerate() {
+            if entry.extension.iter().any(|ext| ext == extension) {
+                return self.configs.get(i);
             }
         }
         None
@@ -37,7 +37,7 @@ impl SyntaxHandler {
 
         let file_path = syntaxes_dir.join(filename.to_owned() + ".toml");
         if !file_path.exists() {
-            let default_config = SyntaxConfig::new(extension);
+            let default_config = SyntaxConfig::new();
             match toml::to_string_pretty(&default_config) {
                 Ok(toml_string) => {
                     if let Err(e) = std::fs::write(&file_path, toml_string) {
@@ -57,7 +57,7 @@ impl SyntaxHandler {
         self.load_syntax_entries();
 
         // use syntax_entry_config to load syntaxes to get syntax_highlighting
-        let syntax_highlighting: Vec<(String, String)> = self
+        let syntax_highlighting: Vec<(Vec<String>, String)> = self
             .syntax_entry_config
             .iter()
             .map(|entry| (entry.extension.clone(), entry.filename.clone()))
@@ -91,7 +91,7 @@ impl SyntaxHandler {
                 }
             } else {
                 // write default syntax config if file doesn't exist
-                self.write_default_syntax(&extension, &filename);
+                self.write_default_syntax(&extension[0], &filename);
             }
         }
     }
@@ -144,14 +144,14 @@ impl SyntaxHandler {
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub(crate) struct SyntaxEntryConfig {
-    pub extension: String,
+    pub extension: Vec<String>,
     pub filename: String,
 }
 
 impl SyntaxEntryConfig {
     pub fn new(extension: &str, filename: &str) -> Self {
         Self {
-            extension: extension.to_string(),
+            extension: vec![extension.to_string()],
             filename: filename.to_string(),
         }
     }
@@ -159,16 +159,14 @@ impl SyntaxEntryConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub(crate) struct SyntaxConfig {
-    pub extension: String,
     pub keywords: Vec<String>,
     pub comment_delimiters: Vec<(String, String)>,
     pub string_delimiters: Vec<(String, String)>,
 }
 
 impl SyntaxConfig {
-    fn new(extension: &str) -> Self {
+    fn new() -> Self {
         Self {
-            extension: extension.to_string(),
             keywords: Vec::new(),
             comment_delimiters: Vec::new(),
             string_delimiters: Vec::new(),
