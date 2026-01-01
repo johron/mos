@@ -1,4 +1,3 @@
-//mod ui;
 mod input;
 mod editor;
 mod handler;
@@ -13,12 +12,10 @@ use crate::panel::editor_panel::EditorPanel;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
-use ratatui::style::Stylize;
 use ratatui::Terminal;
 use std::fmt::Display;
-use std::io::{BufRead, StdoutLock};
+use std::io::{StdoutLock};
 use std::ops::AddAssign;
-use std::str::FromStr;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
 
@@ -125,6 +122,7 @@ impl Mosaic {
         // Set state and editor config based on config ^
 
         self.register_commands();
+        self.register_shortcuts();
 
         //self.editor.register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
     }
@@ -136,6 +134,14 @@ impl Mosaic {
             mosaic.state_handler.should_quit = true;
            Ok(String::from("Quit command executed"))
        });
+    }
+
+    fn register_shortcuts(&mut self) {
+        self.shortcut_handler.register(String::from("test"), String::from("t"), |mosaic| {
+            println!("test");
+            mosaic.state_handler.should_quit = true;
+            Ok(String::from("Test shortcut"))
+        });
     }
     
     fn reload(&mut self) {
@@ -198,8 +204,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic
                     PanelChild::Editor(editor_panel) => {
                         editor_panel.draw(frame, &mut mosaic.state_handler);
                     }
-                    _ => {
-                    }
+                    _ => {}
                 }
             }
         })?;

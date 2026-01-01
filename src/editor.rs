@@ -376,7 +376,7 @@ impl Editor {
     pub fn register_shortcuts(&mut self, shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
         let editor = &config_handler.config.editor;
 
-        shortcut_handler.register_shortcut(String::from("editor.enter_normal_mode"), editor.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+        shortcut_handler.register(String::from("editor.enter_normal_mode"), editor.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
     }
 
     pub fn register_commands(&mut self, command_handler: &mut CommandHandler, config_handler: &mut ConfigHandler) {

@@ -19,7 +19,7 @@ impl ShortcutHandler {
         }
     }
 
-    pub fn register_shortcut(&mut self, name: String, input: String, handler: fn(&mut Mosaic) -> Result<String, String>) {
+    pub fn register(&mut self, name: String, input: String, handler: fn(&mut Mosaic) -> Result<String, String>) {
         let shortcut = Shortcut {
             name,
             input,

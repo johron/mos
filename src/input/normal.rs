@@ -31,7 +31,7 @@ pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
         match key_event {
             KeyEvent { code: KeyCode::Char('j') | KeyCode::Left, modifiers: KeyModifiers::CONTROL, .. } => {
                 //editor.move_cursor(CursorMove::WordBack)
-                editor.move_cursor(CursorMove::Back)
+                editor.move_cursor(CursorMove::WordBack)
             },
             KeyEvent { code: KeyCode::Char('k') | KeyCode::Up, modifiers: KeyModifiers::CONTROL, .. } => {
                 editor.scroll_up()
@@ -41,7 +41,7 @@ pub fn handle_mode(mosaic: &mut Mosaic, key_event: KeyEvent) {
             },
             KeyEvent { code: KeyCode::Char('ø') | KeyCode::Right, modifiers: KeyModifiers::CONTROL, .. } => {
                 //editor.move_cursor(CursorMove::WordForward)
-                editor.move_cursor(CursorMove::Forward)
+                editor.move_cursor(CursorMove::WordForward)
             },
             _ => {
 

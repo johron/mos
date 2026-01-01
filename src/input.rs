@@ -17,7 +17,7 @@ pub fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
         if let Event::Key(key_event) = event::read()? {
             mosaic.toast = None;
 
-            process_key(mosaic, key_event);
+            process_key(mosaic, key_event).expect("TODO: panic message");
         }
         //if let Event::Mouse(mouse_event) = event::read()? {
         //    // process mouse event
@@ -27,7 +27,41 @@ pub fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
     Ok(())
 }
 
-fn process_key(mosaic: &mut Mosaic, key: KeyEvent) {
+fn process_key(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
+    // convert keyevent to string to compare with shortcut
+
+
+    let mut pressed: Vec<String> = vec![];
+
+    let modifier = key.modifiers.to_string();
+    let char = key.code.to_string();
+
+    if !char.is_empty() {
+        pressed.push(char.to_lowercase());
+    } else {
+        return Err(String::from("Needs char"));
+    }
+
+    if !modifier.is_empty() {
+        pressed.push(modifier.to_lowercase());
+    }
+
+    //println!("{:?}", pressed);
+
+    for shortcut in mosaic.shortcut_handler.get_shortcuts() {
+        let mut input: Vec<String> = shortcut.input.split("+").map(String::from).collect();
+        println!("{:?}, {:?}", input, pressed);
+        if input.sort() == pressed.sort() {
+            return (shortcut.handler)(mosaic)
+        }
+    }
+
+    //println!("{}", pressed);
+
+    Ok(String::from("Key is unmapped"))
+}
+
+fn old_process_key(mosaic: &mut Mosaic, key: KeyEvent) {
     /*const PREFIX_TIMEOUT: Duration = Duration::from_millis(500);
 
     let prefix_lock = MOS_PREFIX.get_or_init(|| Mutex::new(None));
