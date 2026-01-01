@@ -60,13 +60,11 @@ impl Default for EditorConfig {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
 pub struct EditorShortcuts {
-    pub enter_normal_mode: String,
 }
 
 impl Default for EditorShortcuts {
     fn default() -> Self {
         Self {
-            enter_normal_mode: String::from("esc"),
         }
     }
 }
@@ -126,6 +124,8 @@ impl Default for InsertModeConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct InsertModeShortcuts {
+    pub enter_normal_mode: String,
+    
     pub move_left: String,
     pub move_right: String,
     pub move_up: String,
@@ -145,6 +145,8 @@ pub struct InsertModeShortcuts {
 impl Default for InsertModeShortcuts {
     fn default() -> Self {
         Self {
+            enter_normal_mode: String::from("esc"),
+            
             move_left: String::from("left"),
             move_right: String::from("right"),
             move_up: String::from("up"),
@@ -178,6 +180,8 @@ impl Default for CommandModeConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CommandModeShortcuts {
+    pub enter_normal_mode: String,
+    
     pub move_left: String,
     pub move_right: String,
 
@@ -188,6 +192,8 @@ pub struct CommandModeShortcuts {
 impl CommandModeShortcuts {
     pub fn default() -> Self {
         Self {
+            enter_normal_mode: String::from("esc"),
+            
             move_left: String::from("left"),
             move_right: String::from("right"),
 

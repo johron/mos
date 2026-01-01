@@ -18,8 +18,9 @@ use std::io::{StdoutLock};
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
+use crate::editor::Editor;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 enum Mode {
     Normal,
     Insert,
@@ -137,11 +138,7 @@ impl Mosaic {
     }
 
     fn register_shortcuts(&mut self) {
-        self.shortcut_handler.register(String::from("test"), String::from("t"), |mosaic| {
-            println!("test");
-            mosaic.state_handler.should_quit = true;
-            Ok(String::from("Test shortcut"))
-        });
+        Editor::register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
     }
     
     fn reload(&mut self) {

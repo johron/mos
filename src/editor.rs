@@ -1,7 +1,7 @@
 use crate::handler::command_handler::CommandHandler;
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::shortcut_handler::ShortcutHandler;
-use crate::Mosaic;
+use crate::{Mode, Mosaic};
 use ropey::Rope;
 use std::cmp::min;
 
@@ -373,10 +373,21 @@ impl Editor {
         self.show_gutter = !self.show_gutter;
     }
 
-    pub fn register_shortcuts(&mut self, shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
+    pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
         let editor = &config_handler.config.editor;
 
-        shortcut_handler.register(String::from("editor.enter_normal_mode"), editor.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+        // Normal
+        shortcut_handler.register(String::from("editor.normal.enter_insert_mode"), editor.normal_mode.shortcuts.enter_insert_mode.clone(), Self::enter_insert_mode);
+        shortcut_handler.register(String::from("editor.normal.enter_command_mode"), editor.normal_mode.shortcuts.enter_command_mode.clone(), Self::enter_command_mode);
+
+
+        // Command
+        shortcut_handler.register(String::from("editor.command.enter_normal_mode"), editor.command_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+
+
+        // Insert
+        shortcut_handler.register(String::from("editor.insert.enter_normal_mode"), editor.insert_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+
     }
 
     pub fn register_commands(&mut self, command_handler: &mut CommandHandler, config_handler: &mut ConfigHandler) {
@@ -385,8 +396,19 @@ impl Editor {
         });
     }
 
-    fn enter_normal_mode(mosaic: &mut Mosaic) -> Result<String, String> {
-        //mosaic.set_mode(crate::Mode::Normal);
-        Ok(String::from("Entered Normal Mode"))
+    fn enter_normal_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
+        mosaic.state_handler.mode = Mode::Normal;
+        Ok(String::from("Entered normal mode"))
+    }
+
+    fn enter_insert_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
+        mosaic.state_handler.mode = Mode::Insert;
+        Ok(String::from("Entered normal mode"))
+    }
+
+    fn enter_command_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
+        mosaic.state_handler.command.result = None;
+        mosaic.state_handler.mode = Mode::Command;
+        Ok(String::from("Entered command mode"))
     }
 }

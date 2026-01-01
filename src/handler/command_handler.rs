@@ -17,7 +17,7 @@ pub(crate) struct CommandHandler {
     pub(crate) spaces: Vec<CommandSpace>,
 }
 
-impl CommandHandler {
+impl CommandHandler { // TODO: remove command spaces just have string and use cmd.cmd.cmd...
     pub fn new() -> Self {
         Self {
             spaces: Vec::from([
@@ -60,14 +60,5 @@ impl CommandHandler {
             };
             self.spaces.push(new_space);
         }
-    }
-    
-    pub fn handle_command(&self, namespace: &str, command_name: &str, mosaic: &mut Mosaic, args: Vec<String>) -> Option<Result<String, String>> {
-        if let Some(space) = self.spaces.iter().find(|space| space.name == namespace) {
-            if let Some(command) = space.commands.iter().find(|cmd| cmd.name == command_name) {
-                return Some((command.handler)(mosaic, args));
-            }
-        }
-        None
     }
 }

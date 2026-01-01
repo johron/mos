@@ -1,12 +1,8 @@
-use crate::{Mode, Mosaic};
+use crate::{Command, Mode, Mosaic};
 use crossterm::event::{self, Event, KeyCode, KeyEvent};
 use std::io::Error;
 
-mod normal;
-mod insert;
-mod command;
 
-use crate::editor::CursorMove;
 use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant};
 
@@ -43,77 +39,38 @@ fn process_key(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
     }
 
     if !modifier.is_empty() {
-        pressed.push(modifier.to_lowercase());
+        let mods = modifier.split("+");
+        for modi in mods {
+            pressed.push(modi.to_lowercase());
+        }
     }
 
-    //println!("{:?}", pressed);
+    pressed.sort();
 
     for shortcut in mosaic.shortcut_handler.get_shortcuts() {
-        let mut input: Vec<String> = shortcut.input.split("+").map(String::from).collect();
-        println!("{:?}, {:?}", input, pressed);
-        if input.sort() == pressed.sort() {
-            return (shortcut.handler)(mosaic)
-        }
-    }
+        let mode = format!("editor.{}", mosaic.state_handler.mode.clone().to_string().to_lowercase());
 
-    //println!("{}", pressed);
-
-    Ok(String::from("Key is unmapped"))
-}
-
-fn old_process_key(mosaic: &mut Mosaic, key: KeyEvent) {
-    /*const PREFIX_TIMEOUT: Duration = Duration::from_millis(500);
-
-    let prefix_lock = MOS_PREFIX.get_or_init(|| Mutex::new(None));
-    let mut guard = prefix_lock.lock().unwrap();
-
-    // If Tab pressed, set prefix timestamp and wait for next key
-    if key.code == KeyCode::F(12) {
-        // *guard = Some(Instant::now()); disable prefix for now
-        return;
-    }
-
-    // If prefix active and next key within timeout, handle combos
-    if let Some(ts) = *guard {
-        if ts.elapsed() <= PREFIX_TIMEOUT {
-            *guard = None; // consume prefix
-
-            match key.code {
-                KeyCode::Right => {
-                    let len = mosaic.editors.len();
-                    if len > 0 {
-                        mosaic.current_editor = (mosaic.current_editor + 1) % len;
-                    }
-                    return;
-                }
-                KeyCode::Left => {
-                    let len = mosaic.editors.len();
-                    if len > 0 {
-                        mosaic.current_editor = (mosaic.current_editor + len - 1) % len;
-                    }
-                    return;
-                }
-                _ => {
-                    *guard = None; // unrecognized combo, reset prefix
-                }
+        if shortcut.name.starts_with(mode.as_str()) {
+            let mut input: Vec<String> = shortcut.input.split("+").map(String::from).collect();
+            input.sort();
+            if input == pressed {
+                return (shortcut.handler)(mosaic, pressed);
             }
-        } else {
-            // prefix timed out
-            *guard = None;
         }
-    }*/
+    }
 
-    // Fallback to normal mode-specific handling
     match mosaic.state_handler.mode {
-        Mode::Normal => normal::handle_mode(mosaic, key),
-        Mode::Insert => insert::handle_mode(mosaic, key),
-        Mode::Command => command::handle_mode(mosaic, key),
+        Mode::Insert => handle_input_mode(mosaic, key),
+        Mode::Command =>  handle_command_mode(mosaic, key),
+        _ => {
+            Ok(String::from("Input is unmapped"))
+        }
     }
 }
 
-fn handle_non_modifier(mosaic: &mut Mosaic, key_event: KeyEvent) {
+fn handle_input_mode(mosaic: &mut Mosaic, key_event: KeyEvent) -> Result<String, String> {
     if mosaic.panel_handler.get_current_editor_panel().is_none() {
-        return;
+        return Err(String::from("No active editor"))
     }
 
     let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
@@ -123,17 +80,65 @@ fn handle_non_modifier(mosaic: &mut Mosaic, key_event: KeyEvent) {
         KeyCode::Tab => editor.tab(),
 
         KeyCode::Char(c) => editor.input(c),
-
-        KeyCode::Left => editor.move_cursor(CursorMove::Back),
-        KeyCode::Up => editor.move_cursor(CursorMove::Up),
-        KeyCode::Down => editor.move_cursor(CursorMove::Down),
-        KeyCode::Right => editor.move_cursor(CursorMove::Forward),
-
         KeyCode::Enter => editor.input('\n'),
 
         KeyCode::Backspace => {
             editor.backspace();
         },
-        _ => {}
+        _ => {
+            return Ok(String::from("Unmapped input"));
+        }
+    }
+
+    Ok(String::from("Inputted"))
+}
+
+pub fn handle_command_mode(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
+    match key.code {
+        KeyCode::Esc => {
+            mosaic.state_handler.command.result = None;
+            mosaic.state_handler.mode = Mode::Normal;
+        },
+        KeyCode::Enter => {
+            let res = handle_command(mosaic);
+
+            mosaic.state_handler.command = Command {
+                content: String::new(),
+                result: Some(res.unwrap_or_else(|e| format!("Error: {}", e))),
+            };
+
+            mosaic.state_handler.mode = Mode::Normal;
+        },
+        KeyCode::Char(c) => {
+            mosaic.state_handler.command += c.to_string().as_str();
+        },
+        KeyCode::Backspace => {
+            mosaic.state_handler.command.pop();
+        },
+        _ => {
+            return Ok(String::from("Unmapped input"));
+        }
+    }
+
+    Ok(String::from("Inputted command"))
+}
+
+pub fn handle_command(mosaic: &mut Mosaic) -> Result<String, String> {
+    let args = mosaic.state_handler.command.content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
+
+    let commands = mosaic.command_handler.get_commands("@");
+
+    if args.is_empty() || args[0].is_empty() {
+        return Err(String::from("No command provided"));
+    }
+
+    if let Some(cmds) = commands {
+        if let Some(command) = cmds.iter().find(|cmd| cmd.name == args[0]) {
+            (command.handler)(mosaic, args)
+        } else {
+            Err(format!("Unknown command: {}", args[0]))
+        }
+    } else {
+        Err(String::from("No command namespace found"))
     }
 }

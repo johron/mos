@@ -4,7 +4,7 @@ use crate::Mosaic;
 pub struct Shortcut {
     pub name: String,
     pub input: String,
-    pub handler: fn(&mut Mosaic) -> Result<String, String>,
+    pub handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ impl ShortcutHandler {
         }
     }
 
-    pub fn register(&mut self, name: String, input: String, handler: fn(&mut Mosaic) -> Result<String, String>) {
+    pub fn register(&mut self, name: String, input: String, handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>) {
         let shortcut = Shortcut {
             name,
             input,
@@ -31,14 +31,5 @@ impl ShortcutHandler {
 
     pub fn get_shortcuts(&self) -> &Vec<Shortcut> {
         &self.shortcuts
-    }
-
-    pub fn handle_shortcut(&self, input: &str, mosaic: &mut Mosaic) -> Option<Result<String, String>> {
-        for shortcut in &self.shortcuts {
-            if shortcut.input == input {
-                return Some((shortcut.handler)(mosaic));
-            }
-        }
-        None
     }
 }

@@ -1,51 +1,7 @@
 use crate::{Command, Mode, Mosaic};
 use crossterm::event::{KeyCode, KeyEvent};
 
-pub fn handle_mode(mosaic: &mut Mosaic, key: KeyEvent) {
-    match key.code {
-        KeyCode::Esc => {
-            mosaic.state_handler.command.result = None;
-            mosaic.state_handler.mode = Mode::Normal;
-        },
-        KeyCode::Enter => {
-            let res = handle_command(mosaic);
 
-            mosaic.state_handler.command = Command {
-                content: String::new(),
-                result: Some(res.unwrap_or_else(|e| format!("Error: {}", e))),
-            };
-
-            mosaic.state_handler.mode = Mode::Normal;
-        },
-        KeyCode::Char(c) => {
-            mosaic.state_handler.command += c.to_string().as_str();
-        },
-        KeyCode::Backspace => {
-            mosaic.state_handler.command.pop();
-        },
-        _ => {}
-    }
-}
-
-pub fn handle_command(mosaic: &mut Mosaic) -> Result<String, String> {
-    let args = mosaic.state_handler.command.content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
-
-    let commands = mosaic.command_handler.get_commands("@");
-
-    if args.is_empty() || args[0].is_empty() {
-        return Err(String::from("No command provided"));
-    }
-
-     if let Some(cmds) = commands {
-        if let Some(command) = cmds.iter().find(|cmd| cmd.name == args[0]) {
-            (command.handler)(mosaic, args)
-        } else {
-            Err(format!("Unknown command: {}", args[0]))
-        }
-    } else {
-        Err(String::from("No command namespace found"))
-    }
-}
 
 /*pub(crate) fn _handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
     let editor = &mut mosaic.editor;
