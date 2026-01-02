@@ -140,6 +140,9 @@ pub struct InsertModeShortcuts {
     pub scroll_down: String,
     //pub scroll_left: String,
     //pub scroll_right: String,
+    
+    pub newline: String,
+    pub backspace: String,
 }
 
 impl Default for InsertModeShortcuts {
@@ -161,6 +164,9 @@ impl Default for InsertModeShortcuts {
             scroll_down: String::from("ctrl+l | scroll_down"),
             //scroll_left: String::from("ctrl+h"),
             //scroll_right: String::from("ctrl+ø"),
+            
+            newline: String::from("enter"),
+            backspace: String::from("backspace"),
         }
     }
 }

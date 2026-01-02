@@ -30,8 +30,8 @@ enum Mode {
 impl Display for Mode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), fmt::Error> {
         match self {
-            Self::Normal => write!(f, "NORMAL"),
-            Self::Insert => write!(f, "INSERT"),
+            Self::Normal  => write!(f, "NORMAL"),
+            Self::Insert  => write!(f, "INSERT"),
             Self::Command => write!(f, "COMMAND"),
         }
     }

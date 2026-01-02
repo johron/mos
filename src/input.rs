@@ -25,8 +25,6 @@ pub fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
 
 fn process_key(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
     // convert keyevent to string to compare with shortcut
-
-
     let mut pressed: Vec<String> = vec![];
 
     let modifier = key.modifiers.to_string();
@@ -48,9 +46,9 @@ fn process_key(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
     pressed.sort();
 
     for shortcut in mosaic.shortcut_handler.get_shortcuts() {
-        let mode = format!("editor.{}", mosaic.state_handler.mode.clone().to_string().to_lowercase());
+        let mode = format!("mode.{}", mosaic.state_handler.mode.clone().to_string().to_lowercase());
 
-        if shortcut.name.starts_with(mode.as_str()) {
+        if shortcut.name.starts_with(mode.as_str()) || !shortcut.name.starts_with("mode.") {
             let mut input: Vec<String> = shortcut.input.split("+").map(String::from).collect();
             input.sort();
             if input == pressed {
@@ -76,15 +74,14 @@ fn handle_input_mode(mosaic: &mut Mosaic, key_event: KeyEvent) -> Result<String,
     let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
 
     match key_event.code {
-        KeyCode::Esc => mosaic.state_handler.mode = Mode::Normal,
         KeyCode::Tab => editor.tab(),
 
         KeyCode::Char(c) => editor.input(c),
-        KeyCode::Enter => editor.input('\n'),
+        //KeyCode::Enter => editor.input('\n'),
 
-        KeyCode::Backspace => {
-            editor.backspace();
-        },
+        //KeyCode::Backspace => {
+        //    editor.backspace();
+        //},
         _ => {
             return Ok(String::from("Unmapped input"));
         }
@@ -95,10 +92,6 @@ fn handle_input_mode(mosaic: &mut Mosaic, key_event: KeyEvent) -> Result<String,
 
 pub fn handle_command_mode(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
     match key.code {
-        KeyCode::Esc => {
-            mosaic.state_handler.command.result = None;
-            mosaic.state_handler.mode = Mode::Normal;
-        },
         KeyCode::Enter => {
             let res = handle_command(mosaic);
 

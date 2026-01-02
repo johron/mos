@@ -377,17 +377,24 @@ impl Editor {
         let editor = &config_handler.config.editor;
 
         // Normal
-        shortcut_handler.register(String::from("editor.normal.enter_insert_mode"), editor.normal_mode.shortcuts.enter_insert_mode.clone(), Self::enter_insert_mode);
-        shortcut_handler.register(String::from("editor.normal.enter_command_mode"), editor.normal_mode.shortcuts.enter_command_mode.clone(), Self::enter_command_mode);
+        shortcut_handler.register(String::from("mode.normal.enter_insert_mode"), editor.normal_mode.shortcuts.enter_insert_mode.clone(), Self::enter_insert_mode);
+        shortcut_handler.register(String::from("mode.normal.enter_command_mode"), editor.normal_mode.shortcuts.enter_command_mode.clone(), Self::enter_command_mode);
 
 
         // Command
-        shortcut_handler.register(String::from("editor.command.enter_normal_mode"), editor.command_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+        shortcut_handler.register(String::from("mode.command.enter_normal_mode"), editor.command_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
 
 
         // Insert
-        shortcut_handler.register(String::from("editor.insert.enter_normal_mode"), editor.insert_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
-
+        shortcut_handler.register(String::from("mode.insert.enter_normal_mode"), editor.insert_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
+        shortcut_handler.register(String::from("mode.insert.newline"), editor.insert_mode.shortcuts.newline.clone(), |mosaic, args| {
+            mosaic.panel_handler.get_current_editor_panel().unwrap().editor.input('\n');
+            Ok(String::from("Newline"))
+        });
+        shortcut_handler.register(String::from("mode.insert.backspace"), editor.insert_mode.shortcuts.backspace.clone(), |mosaic, args| {
+            mosaic.panel_handler.get_current_editor_panel().unwrap().editor.backspace();
+            Ok(String::from("Backspace"))
+        });
     }
 
     pub fn register_commands(&mut self, command_handler: &mut CommandHandler, config_handler: &mut ConfigHandler) {
