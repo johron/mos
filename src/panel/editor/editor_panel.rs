@@ -1,4 +1,4 @@
-use crate::editor::Editor;
+use crate::panel::editor::editor_logic::Editor;
 use crate::handler::state_handler::StateHandler;
 use crate::handler::syntax_handler::SyntaxHandler;
 use crate::Mode;

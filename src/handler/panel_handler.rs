@@ -1,4 +1,4 @@
-use crate::panel::editor_panel::EditorPanel;
+use crate::panel::editor::editor_panel::EditorPanel;
 
 #[derive(Debug, Clone)]
 pub struct Panel {

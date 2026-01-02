@@ -1,1 +1,1 @@
-pub(crate) mod editor_panel;
+pub(crate) mod editor;

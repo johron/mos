@@ -143,6 +143,8 @@ pub struct InsertModeShortcuts {
     
     pub newline: String,
     pub backspace: String,
+    pub tab: String,
+    pub reverse_tab: String,
 }
 
 impl Default for InsertModeShortcuts {
@@ -167,6 +169,8 @@ impl Default for InsertModeShortcuts {
             
             newline: String::from("enter"),
             backspace: String::from("backspace"),
+            tab: String::from("tab"),
+            reverse_tab: String::from("shift+backtab")
         }
     }
 }

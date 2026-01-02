@@ -1,24 +1,25 @@
-mod input;
-mod editor;
 mod handler;
 mod panel;
+mod input;
 
 use crate::handler::command_handler::CommandHandler;
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::panel_handler::{Panel, PanelChild, PanelHandler};
 use crate::handler::shortcut_handler::ShortcutHandler;
 use crate::handler::state_handler::StateHandler;
-use crate::panel::editor_panel::EditorPanel;
+use crate::handler::input_handler::InputHandler;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use std::fmt::Display;
-use std::io::{StdoutLock};
+use std::io::StdoutLock;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
-use crate::editor::Editor;
+use panel::editor::editor_logic::Editor;
+use crate::panel::editor::editor_panel::EditorPanel;
+use crate::panel::editor::editor_shortcuts;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Mode {
@@ -94,6 +95,7 @@ impl Mosaic {
             config_handler: ConfigHandler::new(),
             command_handler: CommandHandler::new(),
             shortcut_handler: ShortcutHandler::new(),
+
         }
     }
 
@@ -138,7 +140,7 @@ impl Mosaic {
     }
 
     fn register_shortcuts(&mut self) {
-        Editor::register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
+        editor_shortcuts::register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
     }
     
     fn reload(&mut self) {
@@ -213,7 +215,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic
         //    }
         //}
 
-        input::handle(&mut mosaic).expect("TODO: panic message");
+        InputHandler::handle(&mut mosaic).expect("TODO: panic message");
 
         if mosaic.state_handler.should_quit {
             break Ok(());

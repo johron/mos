@@ -1,9 +1,8 @@
-use crate::handler::command_handler::CommandHandler;
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::shortcut_handler::ShortcutHandler;
-use crate::{Mode, Mosaic};
 use ropey::Rope;
 use std::cmp::min;
+use crate::panel::editor::editor_shortcuts;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Cursor {
@@ -371,51 +370,5 @@ impl Editor {
 
     fn toggle_gutter(&mut self) {
         self.show_gutter = !self.show_gutter;
-    }
-
-    pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
-        let editor = &config_handler.config.editor;
-
-        // Normal
-        shortcut_handler.register(String::from("mode.normal.enter_insert_mode"), editor.normal_mode.shortcuts.enter_insert_mode.clone(), Self::enter_insert_mode);
-        shortcut_handler.register(String::from("mode.normal.enter_command_mode"), editor.normal_mode.shortcuts.enter_command_mode.clone(), Self::enter_command_mode);
-
-
-        // Command
-        shortcut_handler.register(String::from("mode.command.enter_normal_mode"), editor.command_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
-
-
-        // Insert
-        shortcut_handler.register(String::from("mode.insert.enter_normal_mode"), editor.insert_mode.shortcuts.enter_normal_mode.clone(), Self::enter_normal_mode);
-        shortcut_handler.register(String::from("mode.insert.newline"), editor.insert_mode.shortcuts.newline.clone(), |mosaic, args| {
-            mosaic.panel_handler.get_current_editor_panel().unwrap().editor.input('\n');
-            Ok(String::from("Newline"))
-        });
-        shortcut_handler.register(String::from("mode.insert.backspace"), editor.insert_mode.shortcuts.backspace.clone(), |mosaic, args| {
-            mosaic.panel_handler.get_current_editor_panel().unwrap().editor.backspace();
-            Ok(String::from("Backspace"))
-        });
-    }
-
-    pub fn register_commands(&mut self, command_handler: &mut CommandHandler, config_handler: &mut ConfigHandler) {
-        command_handler.register(String::from("test"), "@", |mosaic: &mut Mosaic, args: Vec<String>| {
-            Ok(String::from("Test command executed"))
-        });
-    }
-
-    fn enter_normal_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
-        mosaic.state_handler.mode = Mode::Normal;
-        Ok(String::from("Entered normal mode"))
-    }
-
-    fn enter_insert_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
-        mosaic.state_handler.mode = Mode::Insert;
-        Ok(String::from("Entered normal mode"))
-    }
-
-    fn enter_command_mode(mosaic: &mut Mosaic, args: Vec<String>) -> Result<String, String> {
-        mosaic.state_handler.command.result = None;
-        mosaic.state_handler.mode = Mode::Command;
-        Ok(String::from("Entered command mode"))
     }
 }
