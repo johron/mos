@@ -13,8 +13,6 @@ impl InputHandler {
 
     pub(crate) fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
         if event::poll(Duration::from_millis(10))? {
-            // collect any key events that arrive within a short window so we can
-            // treat multiple keys pressed together as a single input set
             let key_events = Self::collect_simultaneous_key_events(30)?;
             if !key_events.is_empty() {
                 mosaic.toast = None;
@@ -29,50 +27,70 @@ impl InputHandler {
         Ok(())
     }
 
-    fn process_key(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
-        // convert keyevent to string to compare with shortcut
-        let mut pressed: Vec<String> = vec![];
+    fn collect_simultaneous_key_events(window_ms: u64) -> Result<Vec<KeyEvent>, Error> {
+        let start = std::time::Instant::now();
+        let mut events: Vec<KeyEvent> = vec![];
 
-        let modifier = key.modifiers.to_string();
-        let char = key.code.to_string();
-
-        if !char.is_empty() {
-            let new_char = match char.clone().replace(" ", "").to_lowercase().as_str() {
-                "backtab" => {
-                     "tab"
-                }
-                _ => {
-                    char.as_str()
-                }
-            };
-            pressed.push(new_char.to_lowercase());
+        if event::poll(Duration::from_millis(window_ms))? {
+            if let Event::Key(k) = event::read()? {
+                events.push(k);
+            }
         } else {
-            return Err(String::from("Needs char"));
+            return Ok(events);
         }
 
-        if !modifier.is_empty() {
-            println!("not empty");
-            let mods = modifier.split("+");
-            for modi in mods {
-                pressed.push(modi.to_lowercase().replace(" ", ""));
+        while start.elapsed() < Duration::from_millis(window_ms) {
+            if event::poll(Duration::from_millis(1))? {
+                if let Event::Key(k) = event::read()? {
+                    events.push(k);
+                } else {
+                    let _ = event::read()?;
+                }
+            } else {
+                break;
+            }
+        }
+
+        Ok(events)
+    }
+
+    fn process_key_events(mosaic: &mut Mosaic, keys: Vec<KeyEvent>) -> Result<String, String> {
+        let mut pressed: Vec<String> = vec![];
+
+        for key in keys.iter() {
+            let modifier = key.modifiers.to_string();
+            let char = key.code.to_string();
+
+            if !char.is_empty() {
+                let new_char = match char.clone().replace(" ", "").to_lowercase().as_str() {
+                    "backtab" => "tab",
+                    _ => char.as_str(),
+                };
+                pressed.push(new_char.to_lowercase());
+            }
+
+            if !modifier.is_empty() {
+                let mods = modifier.split('+');
+                for modi in mods {
+                    pressed.push(modi.to_lowercase().replace(' ', ""));
+                }
             }
         }
 
         pressed.sort();
-        println!("{:?}", pressed);
+        pressed.dedup();
 
         for shortcut in mosaic.shortcut_handler.get_shortcuts() {
             let mode = format!("mode.{}", mosaic.state_handler.mode.clone().to_string().to_lowercase());
 
             if shortcut.name.starts_with(mode.as_str()) || !shortcut.name.starts_with("mode.") {
-                let mut input: Vec<String> = shortcut.input.split("|").map(String::from).collect();
+                let mut input: Vec<String> = shortcut.input.split('|').map(String::from).collect();
                 input.sort();
 
                 for s in input {
-                    let mut split: Vec<String> = s.replace(" ", "").split("+").map(String::from).collect();
+                    let mut split: Vec<String> = s.replace(' ', "").split('+').map(String::from).collect();
                     split.sort();
 
-                    println!("{:?}", split);
                     if split == pressed {
                         return (shortcut.handler)(mosaic);
                     }
@@ -80,12 +98,14 @@ impl InputHandler {
             }
         }
 
-        match mosaic.state_handler.mode {
-            Mode::Insert => Self::handle_input_mode(mosaic, key),
-            Mode::Command =>  Self::handle_command_mode(mosaic, key),
-            _ => {
-                Ok(String::from("Input is unmapped"))
+        if let Some(first) = keys.first() {
+            match mosaic.state_handler.mode {
+                Mode::Insert => Self::handle_input_mode(mosaic, *first),
+                Mode::Command => Self::handle_command_mode(mosaic, *first),
+                _ => Ok(String::from("Input is unmapped")),
             }
+        } else {
+            Ok(String::from("No input"))
         }
     }
 
