@@ -54,7 +54,7 @@ impl InputHandler {
         Ok(events)
     }
 
-    fn process_key_events(mosaic: &mut Mosaic, keys: Vec<KeyEvent>) -> Result<String, String> {
+    fn process_key_events(mosaic: &mut Mosaic, keys: Vec<KeyEvent>) -> Result<String, String> { // TODO: Go back to old input system +-
         let mut pressed: Vec<String> = vec![];
 
         for key in keys.iter() {
