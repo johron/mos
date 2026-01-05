@@ -55,7 +55,8 @@ impl EditorPanel {
             .split(size);
 
         let top_line = self.editor.top_line;
-        let height = size.height as usize - 1;//chunks[0].height as usize - 1;
+        let height = chunks[0].height as usize - 1;
+        //let height = size.height as usize - 1;
 
         self.editor.height = height;
 
@@ -71,7 +72,7 @@ impl EditorPanel {
             .bg(Color::Red);
             //.block(block);
 
-        frame.render_widget(paragraph, size);
+        frame.render_widget(paragraph, chunks[0]);
 
         // render cursors
         //for cursor in &self.editor.cursors {
