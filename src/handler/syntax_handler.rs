@@ -1,7 +1,7 @@
 use ratatui::text::{Line, Span};
 use ropey::Rope;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct SyntaxHandler {
     pub configs: Vec<SyntaxConfig>,
     pub syntax_entry_config: Vec<SyntaxEntryConfig>
@@ -140,7 +140,7 @@ impl SyntaxHandler {
     }
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, PartialEq)]
 pub(crate) struct SyntaxEntryConfig {
     pub extension: Vec<String>,
     pub filename: String,
@@ -155,7 +155,7 @@ impl SyntaxEntryConfig {
     }
 }
 
-#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone, PartialEq)]
 pub(crate) struct SyntaxConfig {
     pub keywords: Vec<String>,
     pub comment_delimiters: Vec<(String, String)>,

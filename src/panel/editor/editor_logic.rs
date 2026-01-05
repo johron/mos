@@ -16,7 +16,7 @@ impl Cursor {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[derive(Clone)]
 pub(crate) struct Editor {
     pub(crate) rope: Rope,
@@ -158,6 +158,12 @@ impl Editor {
             *cur = Self::clamp_cursor(&self.rope, cur.clone());
         }
         self.update_scroll(0);
+    }
+
+    pub fn input_str(&mut self, input: String) {
+        for c in input.chars() {
+            self.input(c);
+        }
     }
 
     fn update_scroll(&mut self, idx: usize) {

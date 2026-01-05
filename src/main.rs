@@ -17,6 +17,7 @@ use std::io::StdoutLock;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
+use ratatui::layout::Direction;
 use panel::editor::editor_logic::Editor;
 use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, TopRight};
 use crate::panel::editor::editor_panel::EditorPanel;
@@ -91,7 +92,7 @@ impl Mosaic {
         Self {
             toast: None,
 
-            panel_handler: PanelHandler::new(),
+            panel_handler: PanelHandler::new(Direction::Horizontal),
             state_handler: StateHandler::new(),
             config_handler: ConfigHandler::new(),
             command_handler: CommandHandler::new(),
@@ -123,15 +124,12 @@ impl Mosaic {
         //self.panel_handler.set_current_panel(Some(String::from("editor_1")));
 
         self.panel_handler.add_panel(
-            Panel::new(String::from("editor_2"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![TopRight]))
+            Panel::new(String::from("editor_2"), PanelChild::Empty, Geometry::new(vec![TopRight]))
         );
         self.panel_handler.add_panel(
-            Panel::new(String::from("editor_3"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![BottomLeft]))
+            Panel::new(String::from("editor_3"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![TopRight]))
         );
-        self.panel_handler.add_panel(
-            Panel::new(String::from("editor_4"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![BottomRight]))
-        );
-        self.panel_handler.set_current_panel(Some(String::from("editor_4")));
+        self.panel_handler.set_current_panel(Some(String::from("editor_3")));
 
 
         self.config_handler.load_config();
@@ -218,7 +216,8 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic
         terminal.draw(|frame| {
             //ui::draw(frame, &mut mosaic); // pass immutable state
 
-            mosaic.panel_handler.draw(frame);
+            //println!("{:?}", frame.area());
+            mosaic.panel_handler.draw(frame, frame.area());
         })?;
 
         //if mosaic.toast.is_some() {

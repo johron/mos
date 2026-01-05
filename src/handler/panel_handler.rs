@@ -1,13 +1,9 @@
+use std::ops::Index;
 use ratatui::Frame;
-use ratatui::layout::Rect;
+use ratatui::layout::{Direction, Rect};
 use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, TopRight};
+use crate::handler::state_handler::StateHandler;
 use crate::panel::editor::editor_panel::EditorPanel;
-
-#[derive(Debug, Clone)]
-pub enum ExtendDirection {
-    Horizontal,
-    Vertical
-}
 
 #[derive(Debug, Clone)]
 #[derive(PartialEq)]
@@ -33,7 +29,7 @@ impl Anchor {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Geometry {
     anchors: Vec<Anchor>
 }
@@ -74,7 +70,7 @@ impl Geometry {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Panel {
     pub id: String,
     pub child: PanelChild,
@@ -91,26 +87,27 @@ impl Panel {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum PanelChild {
     Editor(EditorPanel),
     Explorer(/*ExplorerPanel*/),
-    Shared(PanelHandler)
+    Empty,
+    SubHandler(PanelHandler)
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PanelHandler {
     pub children: Vec<Panel>,
-    pub sub_handler: Option<Box<PanelHandler>>,
     current_panel_id: Option<String>,
+    direction: Direction
 }
 
 impl PanelHandler {
-    pub fn new() -> Self {
+    pub fn new(direction: Direction) -> Self {
         Self {
             children: Vec::new(),
-            sub_handler: None,
             current_panel_id: None,
+            direction
         }
     }
     
@@ -151,32 +148,25 @@ impl PanelHandler {
         None
     }
 
-    pub fn draw(&mut self, frame: &mut Frame) {
-        let area = frame.area();
+    fn round_down(num: u16) -> u16 {
+1
+    }
 
-        for panel in &mut self.children {
-            let rect = match panel.geometry.anchors[0] {
-                TopLeft => {
-                    Rect::new(
-                        0, 0, area.width/2, area.height/2
-                    )
+    pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
+        for panel in &mut self.children.clone() {
+            let index = self.children.iter().position(|elem| elem == panel).unwrap() as u16;
+            let len = self.children.len() as u16;
+
+            let rect = match self.direction {
+                Direction::Horizontal => {
+                    Rect::new(area.x + area.width/len * index, area.y, area.width/len, area.height)
                 },
-                TopRight => {
-                    Rect::new(
-                        area.width/2, 0, area.height/2, area.height/2
-                    )
-                },
-                BottomLeft => {
-                    Rect::new(
-                        0, area.height/2, area.width/2, area.height/2
-                    )
-                },
-                BottomRight => {
-                    Rect::new(
-                        area.width/2, area.height/2, area.width/2, area.height/2
-                    )
-                },
+                Direction::Vertical => {
+                    Rect::new(area.x, area.y +area.height/len * index, area.width, area.height/len)
+                }
             };
+
+            //println!("{}{:?}", index, rect);
 
             match &mut panel.child {
                 PanelChild::Editor(editor_panel) => {
