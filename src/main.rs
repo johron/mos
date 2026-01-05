@@ -20,6 +20,7 @@ use std::{env, fmt, fs, io};
 use ratatui::layout::Direction;
 use panel::editor::editor_logic::Editor;
 use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, TopRight};
+use crate::panel::editor::editor_logic::Cursor;
 use crate::panel::editor::editor_panel::EditorPanel;
 use crate::panel::editor::editor_shortcuts;
 
@@ -152,6 +153,12 @@ impl Mosaic {
             let panel = mosaic.panel_handler.get_current_panel().unwrap();
             let is_valid = panel.geometry.is_valid();
             Ok(format!("{:?}", is_valid))
+        });
+        self.command_handler.register(String::from("cur"), "@", |mosaic, _args| {
+            let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+            let current = &editor.cursors[0];
+            editor.add_cursor(current.line + 1, 0);
+            Ok(format!("Added cursor below"))
         });
     }
 

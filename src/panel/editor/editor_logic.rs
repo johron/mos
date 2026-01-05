@@ -374,6 +374,10 @@ impl Editor {
         }
     }
 
+    pub fn add_cursor(&mut self, line: usize, col: usize) { // TODO: Multi-cursor support is terrible currently, need to fix that since i just wanted a working editor fast and i have not implemented good enough.
+        self.cursors.push(Cursor::new(line, col));
+    }
+
     fn toggle_gutter(&mut self) {
         self.show_gutter = !self.show_gutter;
     }
