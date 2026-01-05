@@ -4,6 +4,12 @@ use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, To
 use crate::panel::editor::editor_panel::EditorPanel;
 
 #[derive(Debug, Clone)]
+pub enum ExtendDirection {
+    Horizontal,
+    Vertical
+}
+
+#[derive(Debug, Clone)]
 #[derive(PartialEq)]
 pub enum Anchor {
     TopLeft,
@@ -94,14 +100,16 @@ pub enum PanelChild {
 
 #[derive(Debug, Clone)]
 pub struct PanelHandler {
-    pub panels: Vec<Panel>,
+    pub children: Vec<Panel>,
+    pub sub_handler: Option<Box<PanelHandler>>,
     current_panel_id: Option<String>,
 }
 
 impl PanelHandler {
     pub fn new() -> Self {
         Self {
-            panels: Vec::new(),
+            children: Vec::new(),
+            sub_handler: None,
             current_panel_id: None,
         }
     }
@@ -111,7 +119,7 @@ impl PanelHandler {
     }
     
     pub fn add_panel(&mut self, panel: Panel) {
-        self.panels.push(panel);
+        self.children.push(panel);
     }
     
    pub fn get_current_panel(&mut self) -> Option<&mut Panel> {
@@ -131,7 +139,7 @@ impl PanelHandler {
         None
     }
     pub fn get_panel(&mut self, id: &str) -> Option<&mut Panel> {
-        self.panels.iter_mut().find(|panel| panel.id == id)
+        self.children.iter_mut().find(|panel| panel.id == id)
     }
     
     pub fn get_editor_panel(&mut self, id: &str) -> Option<&mut EditorPanel> {
@@ -146,7 +154,7 @@ impl PanelHandler {
     pub fn draw(&mut self, frame: &mut Frame) {
         let area = frame.area();
 
-        for panel in &mut self.panels {
+        for panel in &mut self.children {
             let rect = match panel.geometry.anchors[0] {
                 TopLeft => {
                     Rect::new(

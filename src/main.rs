@@ -171,7 +171,7 @@ fn main() -> io::Result<()> {
     let mut stdout = stdout.lock();
 
     enable_raw_mode()?;
-    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags(
+    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags( // TODO: check if keyboard enhancements are supported
         KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
     ))?;
 
