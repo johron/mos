@@ -152,6 +152,11 @@ impl Mosaic {
             editor.add_cursor(current.line + 1, 0);
             Ok(format!("Added cursor below"))
         });
+        self.command_handler.register(String::from("len"), "@", |mosaic, _args| {
+            let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+            editor.input_str(format!("{}", editor.cursors.len()));
+            Ok(String::from("Len command executed"))
+        });
     }
 
     fn register_shortcuts(&mut self) {
@@ -168,10 +173,10 @@ fn main() -> io::Result<()> {
     let mut stdout = stdout.lock();
 
     enable_raw_mode()?;
-    //crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags( // TODO: check if keyboard enhancements are supported
-    //    KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-    //))?;
-    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags( // TODO: check if keyboard enhancements are supported
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+    ))?;
+    //crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;

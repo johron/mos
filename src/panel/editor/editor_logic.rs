@@ -1,5 +1,6 @@
 use ropey::Rope;
 use std::cmp::min;
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(crate) struct Cursor {
@@ -39,7 +40,7 @@ impl Editor {
         let initial = initial.unwrap_or("");
         let rope = Rope::from_str(initial);
         let mut cursors = vec![Cursor { line: 0, col: 0 }];
-        cursors[0] = Self::clamp_cursor(&rope, cursors[0].clone());
+        cursors[0] = Cursor::new(0, 0);
         Self {
             rope,
             cursors,
@@ -55,7 +56,7 @@ impl Editor {
             self.rope = Rope::from_str(&content);
             self.file_path = Some(file_path.to_string());
             self.cursors = vec![Cursor { line: 0, col: 0 }];
-            self.cursors[0] = Self::clamp_cursor(&self.rope, self.cursors[0].clone());
+            self.cursors[0] = Cursor::new(0, 0);
             self.top_line = 0;
         }
     }
@@ -121,6 +122,25 @@ impl Editor {
         c
     }
 
+    fn clamp_cursors(&mut self) {
+        let mut taken_lines: Vec<usize> = vec![];
+        let mut taken_cols: Vec<usize> = vec![];
+
+        for (i, c) in self.cursors.clone().iter().enumerate() {
+            for (idx, line) in taken_lines.iter().enumerate() {
+                if line == &c.line && let Some(col) = taken_lines.get(idx) {
+                    if col == &c.col {
+                        self.cursors.remove(i);
+                        continue
+                    }
+                }
+            }
+
+            taken_lines.push(c.line);
+            taken_cols.push(c.col);
+        }
+    }
+
     pub(crate) fn input(&mut self, ch: char) {
         // Insert at each cursor. To avoid offsets messing up, convert to absolute char indices,
         // sort descending and insert in that order.
@@ -152,7 +172,7 @@ impl Editor {
                 cur.col += 1;
             }
 
-            *cur = Self::clamp_cursor(&self.rope, cur.clone());
+            Self::clamp_cursor(&self.rope, cur.clone());
         }
         self.update_scroll(0);
     }
@@ -234,103 +254,123 @@ impl Editor {
     }
 
     pub fn move_cursor(&mut self, direction: CursorDirection) {
-        let idx = 0; // for now, move only the first cursor
+        //let mut taken: HashMap<usize, usize> = HashMap::new();
+        for (idx, _) in self.cursors.clone().iter().enumerate() {
+            //if taken.contains_key(&self.cursors[idx].line) && taken.get(&self.cursors[idx].col).is_some() {
+            //    self.input_str(String::from("removed"));
+            //    self.cursors.remove(idx);
+            //    continue
+            //}
+//
+            //taken.insert(self.cursors[idx].line, self.cursors[idx].col);
 
-        match direction {
-            CursorDirection::Left => {
-                if self.cursors[idx].col > 0 {
-                    self.cursors[idx].col -= 1;
-                } else if self.cursors[idx].line > 0 {
-                    self.cursors[idx].line -= 1;
-                    self.cursors[idx].col = self.line_visible_len(self.cursors[idx].line);
-                }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-            }
-            CursorDirection::Right => {
-                let line_len = self.line_visible_len(self.cursors[idx].line);
-                if self.cursors[idx].col < line_len {
-                    self.cursors[idx].col += 1;
-                } else if self.cursors[idx].line + 1 < self.rope.len_lines() {
-                    self.cursors[idx].line += 1;
-                    self.cursors[idx].col = 0;
-                }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-            }
-            CursorDirection::Up => {
-                if self.cursors[idx].line > 0 {
-                    self.cursors[idx].line -= 1;
-                    let line_len = self.line_visible_len(self.cursors[idx].line);
-                    self.cursors[idx].col = min(self.cursors[idx].col, line_len);
-                }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-
-                if self.cursors[idx].line < self.top_line {
-                    self.top_line = self.cursors[idx].line;
-                }
-
-                self.update_scroll(idx);
-            }
-            CursorDirection::Down => {
-                if self.cursors[idx].line + 1 < self.rope.len_lines() {
-                    self.cursors[idx].line += 1;
-                    let line_len = self.line_visible_len(self.cursors[idx].line);
-                    self.cursors[idx].col = min(self.cursors[idx].col, line_len);
-                }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-
-                if self.cursors[idx].line >= self.top_line + self.height {
-                    self.top_line = self.cursors[idx].line.saturating_sub(self.height).saturating_add(1);
-                }
-
-                self.update_scroll(idx);
-            }
-            CursorDirection::WordLeft => { // TODO: should not skip over multiple newlines at once, only one at a time, applies to WordRight too
-                let idx = 0;
-                let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
-                if pos == 0 {
-                    // already at start
-                } else {
-                    // step left at least one char
-                    pos -= 1;
-                    // skip whitespace going backward
-                    while pos > 0 && self.rope.char(pos).is_whitespace() {
-                        pos -= 1;
+            match direction {
+                CursorDirection::Left => {
+                    if self.cursors[idx].col > 0 {
+                        self.cursors[idx].col -= 1;
+                    } else if self.cursors[idx].line > 0 {
+                        self.cursors[idx].line -= 1;
+                        self.cursors[idx].col = self.line_visible_len(self.cursors[idx].line);
                     }
-                    // move to start of that word
-                    while pos > 0 && !self.rope.char(pos - 1).is_whitespace() {
-                        pos -= 1;
-                    }
-                    let line = self.rope.char_to_line(pos);
-                    let col = pos - self.rope.line_to_char(line);
-                    self.cursors[idx].line = line;
-                    self.cursors[idx].col = col;
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
                 }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-            }
-            CursorDirection::WordRight => {
-                let idx = 0;
-                let total = self.rope.len_chars();
-                let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
-                if pos < total {
-                    if self.rope.char(pos).is_whitespace() {
-                        while pos < total && self.rope.char(pos).is_whitespace() {
-                            pos += 1;
-                        }
+                CursorDirection::Right => {
+                    let line_len = self.line_visible_len(self.cursors[idx].line);
+                    if self.cursors[idx].col < line_len {
+                        self.cursors[idx].col += 1;
+                    } else if self.cursors[idx].line + 1 < self.rope.len_lines() {
+                        self.cursors[idx].line += 1;
+                        self.cursors[idx].col = 0;
+                    }
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+                }
+                CursorDirection::Up => {
+                    if self.cursors[idx].line > 0 {
+                        self.cursors[idx].line -= 1;
+                        let line_len = self.line_visible_len(self.cursors[idx].line);
+                        self.cursors[idx].col = min(self.cursors[idx].col, line_len);
+                    }
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+
+                    if self.cursors[idx].line < self.top_line {
+                        self.top_line = self.cursors[idx].line;
+                    }
+
+                    self.update_scroll(idx);
+                }
+                CursorDirection::Down => {
+                    if self.cursors[idx].line + 1 < self.rope.len_lines() {
+                        self.cursors[idx].line += 1;
+                        let line_len = self.line_visible_len(self.cursors[idx].line);
+                        self.cursors[idx].col = min(self.cursors[idx].col, line_len);
+                    }
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+
+                    if self.cursors[idx].line >= self.top_line + self.height {
+                        self.top_line = self.cursors[idx].line.saturating_sub(self.height).saturating_add(1);
+                    }
+
+                    self.update_scroll(idx);
+                }
+                CursorDirection::WordLeft => { // TODO: should not skip over multiple newlines at once, only one at a time, applies to WordRight too
+                    let idx = 0;
+                    let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
+                    if pos == 0 {
+                        // already at start
                     } else {
-                        while pos < total && !self.rope.char(pos).is_whitespace() {
-                            pos += 1;
+                        // step left at least one char
+                        pos -= 1;
+                        // skip whitespace going backward
+                        while pos > 0 && self.rope.char(pos).is_whitespace() {
+                            pos -= 1;
                         }
-                        while pos < total && self.rope.char(pos).is_whitespace() {
-                            pos += 1;
+                        // move to start of that word
+                        while pos > 0 && !self.rope.char(pos - 1).is_whitespace() {
+                            pos -= 1;
                         }
+                        let line = self.rope.char_to_line(pos);
+                        let col = pos - self.rope.line_to_char(line);
+                        self.cursors[idx].line = line;
+                        self.cursors[idx].col = col;
                     }
-                    let line = self.rope.char_to_line(pos);
-                    let col = pos - self.rope.line_to_char(line);
-                    self.cursors[idx].line = line;
-                    self.cursors[idx].col = col;
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
                 }
-                self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+                CursorDirection::WordRight => {
+                    let idx = 0;
+                    let total = self.rope.len_chars();
+                    let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
+                    if pos < total {
+                        if self.rope.char(pos).is_whitespace() {
+                            while pos < total && self.rope.char(pos).is_whitespace() {
+                                pos += 1;
+                            }
+                        } else {
+                            while pos < total && !self.rope.char(pos).is_whitespace() {
+                                pos += 1;
+                            }
+                            while pos < total && self.rope.char(pos).is_whitespace() {
+                                pos += 1;
+                            }
+                        }
+                        let line = self.rope.char_to_line(pos);
+                        let col = pos - self.rope.line_to_char(line);
+                        self.cursors[idx].line = line;
+                        self.cursors[idx].col = col;
+                    }
+                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+                }
             }
+
+            self.clamp_cursors();
+
+            //taken.clear();
+            //if taken.contains_key(&self.cursors[idx].line) && taken.get(&self.cursors[idx].col).is_some() {
+            //    self.input_str(String::from("removed"));
+            //    self.cursors.remove(idx);
+            //    continue
+            //}
+//
+            //taken.insert(self.cursors[idx].line, self.cursors[idx].col);
         }
     }
 

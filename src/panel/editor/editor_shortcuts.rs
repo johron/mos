@@ -62,6 +62,9 @@ fn newline(mosaic: &mut Mosaic) -> Result<String, String> {
         if !c.is_whitespace() {
             break
         }
+        if c == '\n' {
+            break
+        }
         preceding_whitespace.push(c);
     }
     editor.input('\n');
