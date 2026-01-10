@@ -1,7 +1,7 @@
-use crate::{Mode, Mosaic};
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::shortcut_handler::ShortcutHandler;
 use crate::panel::editor::editor_logic::CursorDirection;
+use crate::{Mode, Mosaic};
 
 pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
     let editor = &config_handler.config.editor;

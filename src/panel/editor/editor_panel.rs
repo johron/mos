@@ -1,10 +1,10 @@
-use crate::panel::editor::editor_logic::Editor;
 use crate::handler::syntax_handler::SyntaxHandler;
-use ratatui::layout::{Constraint, Direction, Layout, Position, Rect};
+use crate::panel::editor::editor_logic::Editor;
+use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::prelude::{Color, Line, Span};
-use ratatui::widgets::{Paragraph};
+use ratatui::style::{Style, Stylize};
+use ratatui::widgets::Paragraph;
 use ratatui::Frame;
-use ratatui::style::{Modifier, Style, Stylize};
 use ropey::Rope;
 
 #[derive(Clone, Debug, PartialEq)]

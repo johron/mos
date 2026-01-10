@@ -2,7 +2,7 @@ use crate::{Command, Mode, Mosaic};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
 
-use std::time::{Duration};
+use std::time::Duration;
 
 #[derive(Clone, Debug)]
 pub struct InputHandler {}

@@ -1,88 +1,18 @@
-use std::ops::Index;
-use ratatui::Frame;
-use ratatui::layout::{Direction, Rect};
-use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, TopRight};
-use crate::handler::state_handler::StateHandler;
 use crate::panel::editor::editor_panel::EditorPanel;
-
-#[derive(Debug, Clone)]
-#[derive(PartialEq)]
-pub enum Anchor {
-    TopLeft,
-    TopRight,
-    BottomRight,
-    BottomLeft
-}
-
-impl Anchor {
-    pub fn all() -> Vec<Anchor> {
-        vec![TopLeft, TopRight, BottomRight, BottomLeft]
-    }
-
-    pub fn get_opposite(anchor: &Anchor) -> Anchor {
-        match anchor {
-            TopLeft => BottomRight,
-            TopRight => BottomLeft,
-            BottomRight => TopLeft,
-            BottomLeft => TopRight,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Geometry {
-    anchors: Vec<Anchor>
-}
-
-impl Geometry {
-    pub fn new(anchors: Vec<Anchor>) -> Self {
-        Self {
-            anchors
-        }
-    }
-
-    pub fn is_valid(&self) -> Result<String, String> { // check if it is valid by itself, not together with other elements, replace result with better that can be used to diagnose for program
-        if self.anchors == Anchor::all() {
-            return Ok(String::from("Valid"));
-        }
-
-        if self.anchors.len() == 1 {
-            return Ok(String::from("Valid"));
-        }
-
-        if self.anchors.len() < 1 {
-            return Err(String::from("Invalid, len() <= 0"));
-        }
-
-        if self.anchors.len() > 2 {
-            return Err(String::from("Invalid, len() > 3"));
-        }
-
-        if self.anchors.len() == 2 {
-            if self.anchors.contains(&Anchor::get_opposite(&self.anchors[0])) {
-                return Err(String::from("Anchors may not be opposites"));
-            }
-
-            return Ok(String::from("Valid"));
-        }
-
-        Err(String::from("Invalid, unknown reason"))
-    }
-}
+use ratatui::layout::{Direction, Rect};
+use ratatui::Frame;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Panel {
     pub id: String,
     pub child: PanelChild,
-    pub geometry: Geometry
 }
 
 impl Panel {
-    pub fn new(id: String, child: PanelChild, geometry: Geometry) -> Self {//, geometry: Geometry) -> Self {
+    pub fn new(id: String, child: PanelChild) -> Self {
         Self {
             id,
             child,
-            geometry,
         }
     }
 }

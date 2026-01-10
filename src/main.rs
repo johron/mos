@@ -4,25 +4,22 @@ mod input;
 
 use crate::handler::command_handler::CommandHandler;
 use crate::handler::config_handler::ConfigHandler;
-use crate::handler::panel_handler::{Anchor, Geometry, Panel, PanelChild, PanelHandler};
+use crate::handler::input_handler::InputHandler;
+use crate::handler::panel_handler::{Panel, PanelChild, PanelHandler};
 use crate::handler::shortcut_handler::ShortcutHandler;
 use crate::handler::state_handler::StateHandler;
-use crate::handler::input_handler::InputHandler;
+use crate::panel::editor::editor_panel::EditorPanel;
+use crate::panel::editor::editor_shortcuts;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
+use ratatui::layout::Direction;
 use ratatui::Terminal;
 use std::fmt::Display;
 use std::io::StdoutLock;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
-use ratatui::layout::Direction;
-use panel::editor::editor_logic::Editor;
-use crate::handler::panel_handler::Anchor::{BottomLeft, BottomRight, TopLeft, TopRight};
-use crate::panel::editor::editor_logic::Cursor;
-use crate::panel::editor::editor_panel::EditorPanel;
-use crate::panel::editor::editor_shortcuts;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Mode {
@@ -120,15 +117,15 @@ impl Mosaic {
 
     fn init(&mut self) {
         self.panel_handler.add_panel(
-            Panel::new(String::from("editor_1"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![TopLeft]))
+            Panel::new(String::from("editor_1"), PanelChild::Editor(EditorPanel::new()))
         );
         //self.panel_handler.set_current_panel(Some(String::from("editor_1")));
 
         self.panel_handler.add_panel(
-            Panel::new(String::from("editor_2"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![TopRight]))
+            Panel::new(String::from("editor_2"), PanelChild::Editor(EditorPanel::new()))
         );
         self.panel_handler.add_panel(
-            Panel::new(String::from("editor_3"), PanelChild::Editor(EditorPanel::new()), Geometry::new(vec![TopRight]))
+            Panel::new(String::from("editor_3"), PanelChild::Editor(EditorPanel::new()))
         );
         self.panel_handler.set_current_panel(Some(String::from("editor_3")));
 
@@ -149,11 +146,6 @@ impl Mosaic {
            mosaic.state_handler.should_quit = true;
            Ok(String::from("Quit command executed"))
        });
-        self.command_handler.register(String::from("valid"), "@", |mosaic, _args| {
-            let panel = mosaic.panel_handler.get_current_panel().unwrap();
-            let is_valid = panel.geometry.is_valid();
-            Ok(format!("{:?}", is_valid))
-        });
         self.command_handler.register(String::from("cur"), "@", |mosaic, _args| {
             let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
             let current = &editor.cursors[0];
