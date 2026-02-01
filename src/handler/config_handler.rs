@@ -60,11 +60,15 @@ impl Default for EditorConfig {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
 pub struct EditorShortcuts {
+    pub mos_key: String,
+    pub clear_cursors: String,
 }
 
 impl Default for EditorShortcuts {
     fn default() -> Self {
         Self {
+            mos_key: String::from("f12"),
+            clear_cursors: String::from("esc"),
         }
     }
 }
@@ -124,12 +128,15 @@ impl Default for InsertModeConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct InsertModeShortcuts {
-    pub enter_normal_mode: String,
+    //pub enter_normal_mode: String,
     
     pub cursor_left: String,
     pub cursor_right: String,
     pub cursor_up: String,
     pub cursor_down: String,
+
+    pub add_cursor_above: String,
+    pub add_cursor_below: String,
 
     pub skip_word_left: String,
     pub skip_word_right: String,
@@ -150,12 +157,15 @@ pub struct InsertModeShortcuts {
 impl Default for InsertModeShortcuts {
     fn default() -> Self {
         Self {
-            enter_normal_mode: String::from("esc"),
+            //enter_normal_mode: String::from("f12"),
             
             cursor_left: String::from("left"),
             cursor_right: String::from("right"),
             cursor_up: String::from("up"),
             cursor_down: String::from("down"),
+
+            add_cursor_above: String::from("control+alt+up"),
+            add_cursor_below: String::from("control+alt+down"),
 
             skip_word_left: String::from("control+left | control+j"),
             skip_word_right: String::from("control+right | control+ø"),
@@ -190,7 +200,7 @@ impl Default for CommandModeConfig {
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CommandModeShortcuts {
-    pub enter_normal_mode: String,
+    //pub enter_normal_mode: String,
     
     pub move_left: String,
     pub move_right: String,
@@ -202,7 +212,7 @@ pub struct CommandModeShortcuts {
 impl CommandModeShortcuts {
     pub fn default() -> Self {
         Self {
-            enter_normal_mode: String::from("esc"),
+            //enter_normal_mode: String::from("f12"),
             
             move_left: String::from("left"),
             move_right: String::from("right"),

@@ -6,6 +6,10 @@ use crate::{Mode, Mosaic};
 pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
     let editor = &config_handler.config.editor;
 
+    // Editor
+    shortcut_handler.register(String::from("editor.enter_normal_mode"), editor.shortcuts.mos_key.clone(), enter_normal_mode);
+    shortcut_handler.register(String::from("editor.clear_cursors"), editor.shortcuts.clear_cursors.clone(), clear_cursors);
+
     // Normal
     shortcut_handler.register(String::from("mode.normal.enter_insert_mode"), editor.normal_mode.shortcuts.enter_insert_mode.clone(), enter_insert_mode);
     shortcut_handler.register(String::from("mode.normal.enter_command_mode"), editor.normal_mode.shortcuts.enter_command_mode.clone(), enter_command_mode);
@@ -16,10 +20,8 @@ pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler
     shortcut_handler.register(String::from("mode.normal.cursor_right"), editor.normal_mode.shortcuts.cursor_right.clone(), cursor_right);
 
     // Command
-    shortcut_handler.register(String::from("mode.command.enter_normal_mode"), editor.command_mode.shortcuts.enter_normal_mode.clone(), enter_normal_mode);
 
     // Insert
-    shortcut_handler.register(String::from("mode.insert.enter_normal_mode"), editor.insert_mode.shortcuts.enter_normal_mode.clone(), enter_normal_mode);
     shortcut_handler.register(String::from("mode.insert.newline"), editor.insert_mode.shortcuts.newline.clone(), newline);
     shortcut_handler.register(String::from("mode.insert.backspace"), editor.insert_mode.shortcuts.backspace.clone(), backspace);
     shortcut_handler.register(String::from("mode.insert.tab"), editor.insert_mode.shortcuts.tab.clone(), tab);
@@ -31,6 +33,9 @@ pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler
     shortcut_handler.register(String::from("mode.insert.cursor_right"), editor.insert_mode.shortcuts.cursor_right.clone(), cursor_right);
     shortcut_handler.register(String::from("mode.insert.skip_word_left"), editor.insert_mode.shortcuts.skip_word_left.clone(), skip_word_left);
     shortcut_handler.register(String::from("mode.insert.skip_word_right"), editor.insert_mode.shortcuts.skip_word_right.clone(), skip_word_right);
+
+    shortcut_handler.register(String::from("mode.insert.add_cursor_below"), editor.insert_mode.shortcuts.add_cursor_below.clone(), add_cursor_below);
+    shortcut_handler.register(String::from("mode.insert.add_cursor_above"), editor.insert_mode.shortcuts.add_cursor_above.clone(), add_cursor_above);
 }
 
 fn enter_normal_mode(mosaic: &mut Mosaic) -> Result<String, String> {
@@ -142,4 +147,19 @@ fn skip_word_left(mosaic: &mut Mosaic) -> Result<String, String> {
 fn skip_word_right(mosaic: &mut Mosaic) -> Result<String, String> {
     mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::WordRight);
     Ok(String::from("Skip word right"))
+}
+
+fn add_cursor_below(mosaic: &mut Mosaic) -> Result<String, String> {
+    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_below();
+    Ok(String::from("Added cursor below"))
+}
+
+fn add_cursor_above(mosaic: &mut Mosaic) -> Result<String, String> {
+    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_above();
+    Ok(String::from("Added cursor above"))
+}
+
+fn clear_cursors(mosaic: &mut Mosaic) -> Result<String, String> {
+    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.clear_cursors();
+    Ok(String::from("Cleared extra cursors"))
 }

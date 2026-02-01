@@ -146,17 +146,11 @@ impl Mosaic {
            mosaic.state_handler.should_quit = true;
            Ok(String::from("Quit command executed"))
        });
-        self.command_handler.register(String::from("cur"), "@", |mosaic, _args| {
-            let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
-            let current = &editor.cursors[0];
-            editor.add_cursor(current.line + 1, 0);
-            Ok(format!("Added cursor below"))
-        });
-        self.command_handler.register(String::from("len"), "@", |mosaic, _args| {
-            let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
-            editor.input_str(format!("{}", editor.cursors.len()));
-            Ok(String::from("Len command executed"))
-        });
+        //self.command_handler.register(String::from("len"), "@", |mosaic, _args| {
+        //    let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+        //    editor.input_str(format!("{}", editor.cursors.len()));
+        //    Ok(String::from("Len command executed"))
+        //});
     }
 
     fn register_shortcuts(&mut self) {

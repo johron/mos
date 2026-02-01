@@ -1,28 +1,9 @@
 use ropey::Rope;
-use std::cmp::min;
-use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Cursor {
-    pub(crate) line: usize,
-    pub(crate) col: usize,
-}
-
-impl Cursor {
-    pub(crate) fn new(line: usize, col: usize) -> Self {
-        Self { line, col }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-#[derive(Clone)]
-pub(crate) struct Editor {
-    pub(crate) rope: Rope,
-    pub(crate) cursors: Vec<Cursor>,
-    pub(crate) file_path: Option<String>,
-    pub(crate) top_line: usize,
-    pub(crate) height: usize,
-    show_gutter: bool,
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Cursor {
+    pub line: usize,
+    pub col: usize,
 }
 
 pub enum CursorDirection {
@@ -35,12 +16,30 @@ pub enum CursorDirection {
     WordLeft,
 }
 
+#[derive(Debug, Clone)]
+enum Edit {
+    Insert { at: usize, text: String },
+    Delete { range: std::ops::Range<usize> },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Editor {
+    pub(crate) rope: Rope,
+    pub(crate) cursors: Vec<Cursor>,
+
+    // view state
+    pub(crate) top_line: usize,
+    pub(crate) height: usize,
+    show_gutter: bool,
+
+    file_path: Option<String>,
+}
+
 impl Editor {
     pub(crate) fn new(initial: Option<&str>, file_path: Option<String>) -> Self {
         let initial = initial.unwrap_or("");
         let rope = Rope::from_str(initial);
-        let mut cursors = vec![Cursor { line: 0, col: 0 }];
-        cursors[0] = Cursor::new(0, 0);
+        let cursors = vec![Cursor { line: 0, col: 0 }];
         Self {
             rope,
             cursors,
@@ -56,11 +55,10 @@ impl Editor {
             self.rope = Rope::from_str(&content);
             self.file_path = Some(file_path.to_string());
             self.cursors = vec![Cursor { line: 0, col: 0 }];
-            self.cursors[0] = Cursor::new(0, 0);
             self.top_line = 0;
         }
     }
-    
+
     pub fn get_file_extension(&self) -> Option<String> {
         if let Some(ref path) = self.file_path {
             if let Some(ext) = std::path::Path::new(path).extension() {
@@ -69,332 +67,185 @@ impl Editor {
         }
         None
     }
-    
-    fn line_visible_len(&self, line: usize) -> usize {
-        let len = self.rope.line(line).len_chars();
-        if len == 0 {
-            return 0;
-        }
-        let start = self.rope.line_to_char(line);
-        // safe because len > 0
-        let last = self.rope.char(start + len - 1);
-        if last == '\n' {
-            len - 1
-        } else {
-            len
-        }
-    }
 
-    fn cursor_abs_pos(&self, cur: &Cursor) -> usize {
-        self.rope.line_to_char(cur.line) + cur.col
-    }
-
-    fn char_under_cursor(&self, cur: &Cursor) -> Option<char> {
-        let vis_len = self.line_visible_len(cur.line);
-        if cur.col < vis_len {
-            let pos = self.cursor_abs_pos(cur);
-            Some(self.rope.char(pos))
-        } else {
-            None
-        }
+    fn cursor_to_char(&self, c: Cursor) -> usize {
+        self.rope.line_to_char(c.line) + c.col
     }
 
     fn clamp_cursor(rope: &Rope, mut c: Cursor) -> Cursor {
-        let line_count = rope.len_lines();
-        if c.line >= line_count.saturating_sub(1) + 1 {
-            c.line = line_count.saturating_sub(1);
-        }
-        let line_len = {
-            // compute visible len using rope methods
-            let len = rope.line(c.line).len_chars();
-            if len == 0 {
-                0
-            } else {
-                let start = rope.line_to_char(c.line);
-                let last = rope.char(start + len - 1);
-                if last == '\n' { len - 1 } else { len }
-            }
-        };
-        if c.col > line_len {
-            c.col = line_len;
-        }
+        let max_line = rope.len_lines().saturating_sub(1);
+        c.line = c.line.min(max_line);
 
+        let line_len = rope.line(c.line).len_chars();
+        let visible = if line_len > 0 && rope.char(rope.line_to_char(c.line) + line_len - 1) == '\n' {
+            line_len - 1
+        } else {
+            line_len
+        };
+
+        c.col = c.col.min(visible);
         c
     }
 
-    fn clamp_cursors(&mut self) {
-        let mut taken_lines: Vec<usize> = vec![];
-        let mut taken_cols: Vec<usize> = vec![];
+    fn normalize_geometry(&mut self) {
+        self.cursors = self.cursors
+            .iter()
+            .map(|&c| Editor::clamp_cursor(&self.rope, c))
+            .collect();
 
-        for (i, c) in self.cursors.clone().iter().enumerate() {
-            for (idx, line) in taken_lines.iter().enumerate() {
-                if line == &c.line && let Some(col) = taken_lines.get(idx) {
-                    if col == &c.col {
-                        self.cursors.remove(i);
-                        continue
-                    }
+        self.cursors.sort();
+    }
+
+    fn dedup_cursors(&mut self) {
+        self.cursors.dedup();
+    }
+
+    fn apply_edits(&mut self, mut edits: Vec<Edit>) {
+        edits.sort_by(|a, b| {
+            let pa = match a { Edit::Insert { at, .. } => *at, Edit::Delete { range } => range.start };
+            let pb = match b { Edit::Insert { at, .. } => *at, Edit::Delete { range } => range.start };
+            pb.cmp(&pa)
+        });
+
+        for edit in edits {
+            match edit {
+                Edit::Insert { at, text } => {
+                    self.rope.insert(at, &text);
+                }
+                Edit::Delete { range } => {
+                    self.rope.remove(range);
                 }
             }
-
-            taken_lines.push(c.line);
-            taken_cols.push(c.col);
         }
     }
 
-    pub(crate) fn input(&mut self, ch: char) {
-        // Insert at each cursor. To avoid offsets messing up, convert to absolute char indices,
-        // sort descending and insert in that order.
-        let mut positions: Vec<usize> = self
-            .cursors
+    pub fn input(&mut self, ch: char) {
+        self.normalize_geometry();
+
+        let mut positions: Vec<usize> =
+            self.cursors.iter().map(|&c| self.cursor_to_char(c)).collect();
+
+        let mut edits: Vec<Edit> = positions
             .iter()
-            .map(|cur| {
-                let line_start = self.rope.line_to_char(cur.line);
-                line_start + cur.col
+            .map(|&p| Edit::Insert {
+                at: p,
+                text: ch.to_string(),
             })
             .collect();
 
-        // sort unique descending (if two cursors at same pos, insert once per cursor still OK,
-        // but we keep them separate so each receives a char).
-        let mut pos_with_idx: Vec<(usize, usize)> =
-            positions.iter().copied().enumerate().map(|(i, p)| (p, i)).collect();
-        pos_with_idx.sort_by(|a, b| b.0.cmp(&a.0)); // descending by position
+        edits.sort_by(|a, b| {
+            let pa = match a {
+                Edit::Insert { at, .. } => *at,
+                Edit::Delete { range } => range.start,
+            };
+            let pb = match b {
+                Edit::Insert { at, .. } => *at,
+                Edit::Delete { range } => range.start,
+            };
+            pb.cmp(&pa)
+        });
 
-        for (pos, _idx) in pos_with_idx {
-            self.rope.insert_char(pos, ch);
-        }
-
-        // After insert, advance all cursors' columns by 1 (for simplicity).
-        for cur in &mut self.cursors {
-            if ch == '\n' {
-                cur.line += 1;
-                cur.col = 0;
-            } else {
-                cur.col += 1;
+        for edit in &edits {
+            match edit {
+                Edit::Insert { at, text } => {
+                    self.rope.insert(*at, text);
+                }
+                Edit::Delete { range } => {
+                    self.rope.remove(range.clone());
+                }
             }
-
-            Self::clamp_cursor(&self.rope, cur.clone());
         }
-        self.update_scroll(0);
-    }
 
-    pub fn input_str(&mut self, input: String) {
-        for c in input.chars() {
-            self.input(c);
+        for edit in &edits {
+            for pos in &mut positions {
+                match edit {
+                    Edit::Insert { at, text } => {
+                        if *pos >= *at {
+                            *pos += text.chars().count();
+                        }
+                    }
+                    Edit::Delete { range } => {
+                        if *pos > range.end {
+                            *pos -= range.end - range.start;
+                        } else if *pos >= range.start {
+                            *pos = range.start;
+                        }
+                    }
+                }
+            }
         }
-    }
 
-    fn update_scroll(&mut self, idx: usize) {
-        // ensure first cursor is visible
-        if self.cursors[idx].line < self.top_line {
-            self.top_line = self.cursors[idx].line;
-        } else if self.cursors[idx].line >= self.top_line + self.height {
-            self.top_line = self.cursors[idx].line.saturating_sub(self.height).saturating_add(1);
-        }
+        self.cursors = positions
+            .into_iter()
+            .map(|pos| {
+                let line = self.rope.char_to_line(pos);
+                let col = pos - self.rope.line_to_char(line);
+                Cursor { line, col }
+            })
+            .collect();
+
+        self.normalize_geometry();
+        self.dedup_cursors();
     }
 
     pub fn backspace(&mut self) {
-        // Delete character before each cursor. We must compute absolute positions and process descending.
-        let mut positions: Vec<usize> = self
-            .cursors
+        self.normalize_geometry();
+
+        let mut positions: Vec<usize> =
+            self.cursors.iter().map(|&c| self.cursor_to_char(c)).collect();
+
+        let mut edits: Vec<Edit> = positions
             .iter()
-            .map(|cur| {
-                let line_start = self.rope.line_to_char(cur.line);
-                line_start + cur.col
+            .filter_map(|&pos| {
+                if pos > 0 {
+                    Some(Edit::Delete {
+                        range: pos - 1..pos,
+                    })
+                } else {
+                    None
+                }
             })
             .collect();
 
-        // For each position, if > 0 remove char at pos-1.
-        positions.sort_unstable();
-        positions.dedup(); // avoid duplicate deletions at same byte pos
-        positions.reverse(); // delete descending
-        for pos in positions {
-            if pos > 0 {
-                self.rope.remove(pos - 1..pos);
-            }
-        }
+        edits.sort_by(|a, b| {
+            let sa = match a { Edit::Delete { range } => range.start, _ => 0 };
+            let sb = match b { Edit::Delete { range } => range.start, _ => 0 };
+            sb.cmp(&sa)
+        });
+        edits.dedup_by(|a, b| match (a, b) {
+            (Edit::Delete { range: r1 }, Edit::Delete { range: r2 }) => r1 == r2,
+            _ => false,
+        });
 
-        let mut idx = 0;
-        while idx < self.cursors.len() {
-            // read current cursor state with a short immutable borrow
-            let (col, line) = {
-                let c = &self.cursors[idx];
-                (c.col, c.line)
-            };
+        self.apply_edits(edits.clone());
 
-            if col > 0 {
-                let cur = &mut self.cursors[idx];
-                cur.col -= 1;
-                *cur = Self::clamp_cursor(&self.rope, cur.clone());
-            } else if line > 0 {
-                // compute visible length of previous line using only `self.rope`
-                let prev_line = line - 1;
-                let new_col = {
-                    let len = self.rope.line(prev_line).len_chars();
-                    if len == 0 {
-                        0
-                    } else {
-                        let start = self.rope.line_to_char(prev_line);
-                        let last = self.rope.char(start + len - 1);
-                        if last == '\n' { len - 1 } else { len }
-                    }
-                };
-                let cur = &mut self.cursors[idx];
-                cur.line = prev_line;
-                cur.col = new_col;
-                *cur = Self::clamp_cursor(&self.rope, cur.clone());
-            } else {
-                let cur = &mut self.cursors[idx];
-                *cur = Self::clamp_cursor(&self.rope, cur.clone());
-            }
-
-            self.update_scroll(idx);
-
-            idx += 1;
-        }
-    }
-
-    pub fn move_cursor(&mut self, direction: CursorDirection) {
-        //let mut taken: HashMap<usize, usize> = HashMap::new();
-        for (idx, _) in self.cursors.clone().iter().enumerate() {
-            //if taken.contains_key(&self.cursors[idx].line) && taken.get(&self.cursors[idx].col).is_some() {
-            //    self.input_str(String::from("removed"));
-            //    self.cursors.remove(idx);
-            //    continue
-            //}
-//
-            //taken.insert(self.cursors[idx].line, self.cursors[idx].col);
-
-            match direction {
-                CursorDirection::Left => {
-                    if self.cursors[idx].col > 0 {
-                        self.cursors[idx].col -= 1;
-                    } else if self.cursors[idx].line > 0 {
-                        self.cursors[idx].line -= 1;
-                        self.cursors[idx].col = self.line_visible_len(self.cursors[idx].line);
-                    }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-                }
-                CursorDirection::Right => {
-                    let line_len = self.line_visible_len(self.cursors[idx].line);
-                    if self.cursors[idx].col < line_len {
-                        self.cursors[idx].col += 1;
-                    } else if self.cursors[idx].line + 1 < self.rope.len_lines() {
-                        self.cursors[idx].line += 1;
-                        self.cursors[idx].col = 0;
-                    }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-                }
-                CursorDirection::Up => {
-                    if self.cursors[idx].line > 0 {
-                        self.cursors[idx].line -= 1;
-                        let line_len = self.line_visible_len(self.cursors[idx].line);
-                        self.cursors[idx].col = min(self.cursors[idx].col, line_len);
-                    }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-
-                    if self.cursors[idx].line < self.top_line {
-                        self.top_line = self.cursors[idx].line;
-                    }
-
-                    self.update_scroll(idx);
-                }
-                CursorDirection::Down => {
-                    if self.cursors[idx].line + 1 < self.rope.len_lines() {
-                        self.cursors[idx].line += 1;
-                        let line_len = self.line_visible_len(self.cursors[idx].line);
-                        self.cursors[idx].col = min(self.cursors[idx].col, line_len);
-                    }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-
-                    if self.cursors[idx].line >= self.top_line + self.height {
-                        self.top_line = self.cursors[idx].line.saturating_sub(self.height).saturating_add(1);
-                    }
-
-                    self.update_scroll(idx);
-                }
-                CursorDirection::WordLeft => { // TODO: should not skip over multiple newlines at once, only one at a time, applies to WordRight too
-                    let idx = 0;
-                    let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
-                    if pos == 0 {
-                        // already at start
-                    } else {
-                        // step left at least one char
-                        pos -= 1;
-                        // skip whitespace going backward
-                        while pos > 0 && self.rope.char(pos).is_whitespace() {
-                            pos -= 1;
+        for edit in &edits {
+            for pos in &mut positions {
+                match edit {
+                    Edit::Delete { range } => {
+                        if *pos > range.end {
+                            *pos -= range.end - range.start;
+                        } else if *pos >= range.start {
+                            *pos = range.start;
                         }
-                        // move to start of that word
-                        while pos > 0 && !self.rope.char(pos - 1).is_whitespace() {
-                            pos -= 1;
-                        }
-                        let line = self.rope.char_to_line(pos);
-                        let col = pos - self.rope.line_to_char(line);
-                        self.cursors[idx].line = line;
-                        self.cursors[idx].col = col;
                     }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
-                }
-                CursorDirection::WordRight => {
-                    let idx = 0;
-                    let total = self.rope.len_chars();
-                    let mut pos = self.cursor_abs_pos(&self.cursors[idx]);
-                    if pos < total {
-                        if self.rope.char(pos).is_whitespace() {
-                            while pos < total && self.rope.char(pos).is_whitespace() {
-                                pos += 1;
-                            }
-                        } else {
-                            while pos < total && !self.rope.char(pos).is_whitespace() {
-                                pos += 1;
-                            }
-                            while pos < total && self.rope.char(pos).is_whitespace() {
-                                pos += 1;
-                            }
-                        }
-                        let line = self.rope.char_to_line(pos);
-                        let col = pos - self.rope.line_to_char(line);
-                        self.cursors[idx].line = line;
-                        self.cursors[idx].col = col;
-                    }
-                    self.cursors[idx] = Self::clamp_cursor(&self.rope, self.cursors[idx].clone());
+                    _ => {}
                 }
             }
-
-            self.clamp_cursors();
-
-            //taken.clear();
-            //if taken.contains_key(&self.cursors[idx].line) && taken.get(&self.cursors[idx].col).is_some() {
-            //    self.input_str(String::from("removed"));
-            //    self.cursors.remove(idx);
-            //    continue
-            //}
-//
-            //taken.insert(self.cursors[idx].line, self.cursors[idx].col);
         }
+
+        self.cursors = positions
+            .into_iter()
+            .map(|pos| {
+                let line = self.rope.char_to_line(pos);
+                let col = pos - self.rope.line_to_char(line);
+                Cursor { line, col }
+            })
+            .collect();
+
+        self.normalize_geometry();
     }
 
-    pub fn scroll_up(&mut self) {
-        if self.top_line > 0 {
-            self.top_line -= 1;
-
-            if self.cursors[0].line > self.height + self.top_line - 1 {
-                self.cursors[0].line = self.height + self.top_line - 1;
-                self.cursors[0] = Self::clamp_cursor(&self.rope, self.cursors[0].clone());
-            }
-        }
-    }
-
-    pub fn scroll_down(&mut self) {
-        if self.top_line + 1 < self.rope.len_lines() {
-            self.top_line += 1;
-
-            if self.cursors[0].line < self.top_line {
-                self.cursors[0].line = self.top_line;
-                self.cursors[0] = Self::clamp_cursor(&self.rope, self.cursors[0].clone());
-            }
-        }
-    }
 
     pub fn tab(&mut self) {
         for _ in 0..4 {
@@ -402,20 +253,160 @@ impl Editor {
         }
     }
 
-    fn add_cursor_at(&mut self, line: usize, col: usize) {
-        let mut cur = Cursor { line, col };
-        cur = Self::clamp_cursor(&self.rope, cur);
-        // avoid same cursor twice
-        if !self.cursors.contains(&cur) {
-            self.cursors.push(cur);
+    fn line_visible_len_rope(rope: &Rope, line: usize) -> usize {
+        if line >= rope.len_lines() {
+            return 0;
+        }
+
+        let line = rope.line(line);
+        let len = line.len_chars();
+
+        if len == 0 {
+            0
+        } else if line.char(len - 1) == '\n' {
+            len - 1
+        } else {
+            len
         }
     }
 
-    pub fn add_cursor(&mut self, line: usize, col: usize) { // TODO: Multi-cursor support is terrible currently, need to fix that since i just wanted a working editor fast and i have not implemented good enough.
-        self.cursors.push(Cursor::new(line, col));
+    fn squash_out_of_bounds_cursors(&mut self) {
+        let last_line = self.rope.len_lines().saturating_sub(1);
+
+        let mut has_top = false;
+        let mut has_bottom = false;
+
+        self.cursors.retain(|c| {
+            if c.line == 0 {
+                if has_top {
+                    false
+                } else {
+                    has_top = true;
+                    true
+                }
+            } else if c.line == last_line {
+                if has_bottom {
+                    false
+                } else {
+                    has_bottom = true;
+                    true
+                }
+            } else {
+                true
+            }
+        });
     }
 
-    fn toggle_gutter(&mut self) {
-        self.show_gutter = !self.show_gutter;
+    pub fn move_cursor(&mut self, dir: CursorDirection) {
+        let rope = &self.rope; // immutable borrow ends here, not inside loop
+        let line_count = rope.len_lines();
+
+        for c in &mut self.cursors {
+            match dir {
+                CursorDirection::Left => {
+                    if c.col > 0 {
+                        c.col -= 1;
+                    } else if c.line > 0 {
+                        c.line -= 1;
+                        c.col = Editor::line_visible_len_rope(rope, c.line);
+                    }
+                }
+
+                CursorDirection::Right => {
+                    let len = Editor::line_visible_len_rope(rope, c.line);
+                    if c.col < len {
+                        c.col += 1;
+                    } else if c.line + 1 < line_count {
+                        c.line += 1;
+                        c.col = 0;
+                    }
+                }
+
+                CursorDirection::Up => {
+                    if c.line > 0 {
+                        c.line -= 1;
+                        c.col = c.col.min(Editor::line_visible_len_rope(rope, c.line));
+                    }
+                }
+
+                CursorDirection::Down => {
+                    if c.line + 1 < line_count {
+                        c.line += 1;
+                        c.col = c.col.min(Editor::line_visible_len_rope(rope, c.line));
+                    }
+                }
+
+                _ => {}
+            }
+        }
+
+        self.normalize_geometry();
+        self.dedup_cursors();
+        self.squash_out_of_bounds_cursors();
+    }
+
+    pub fn add_cursor_below(&mut self) {
+        let rope = &self.rope;
+        let line_count = rope.len_lines();
+
+        let mut new_cursors = Vec::new();
+
+        for &c in &self.cursors {
+            let target_line = c.line + 1;
+            if target_line >= line_count {
+                continue;
+            }
+
+            let max_col = Editor::line_visible_len_rope(rope, target_line);
+            let new_col = c.col.min(max_col);
+
+            new_cursors.push(Cursor {
+                line: target_line,
+                col: new_col,
+            });
+        }
+
+        self.cursors.extend(new_cursors);
+        self.normalize_geometry();
+        self.dedup_cursors();
+        self.squash_out_of_bounds_cursors();
+    }
+
+    pub fn add_cursor_above(&mut self) {
+        let rope = &self.rope;
+
+        let mut new_cursors = Vec::new();
+
+        for &c in &self.cursors {
+            if c.line == 0 {
+                continue;
+            }
+
+            let target_line = c.line - 1;
+            let max_col = Editor::line_visible_len_rope(rope, target_line);
+            let new_col = c.col.min(max_col);
+
+            new_cursors.push(Cursor {
+                line: target_line,
+                col: new_col,
+            });
+        }
+
+        self.cursors.extend(new_cursors);
+        self.normalize_geometry();
+        self.dedup_cursors();
+        self.squash_out_of_bounds_cursors();
+    }
+
+    pub fn clear_cursors(&mut self) {
+        // reduce to only one remaining cursor
+        self.normalize_geometry();
+        let primary = self
+            .cursors
+            .first()
+            .cloned()
+            .unwrap_or(Cursor { line: 0, col: 0 });
+        self.cursors.clear();
+        self.cursors.push(primary);
     }
 }
