@@ -6,7 +6,7 @@
                 _\   \      /  /__          
                 \___  \____/   __/         
                     \_       _/            Modern mode-oriented configurable and
-                      | @ @  \_            extendable terminaled-based text editor
+                      | 0 0  \_            extendable terminaled-based text editor
                       |                    
                     _/     /\
                    /o)  (o/\ \_
