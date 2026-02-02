@@ -1,5 +1,4 @@
 use crate::{Command, Mode};
-use ratatui::layout::Direction;
 
 #[derive(Clone, Debug)]
 pub struct StateHandler {

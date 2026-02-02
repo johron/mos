@@ -13,19 +13,24 @@ use crate::panel::editor::editor_shortcuts;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture, KeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
-use ratatui::layout::Direction;
+use ratatui::layout::{Direction, Rect};
 use ratatui::Terminal;
 use std::fmt::Display;
 use std::io::StdoutLock;
 use std::ops::AddAssign;
 use std::time::{Duration, Instant};
 use std::{env, fmt, fs, io};
+use crate::panel::command::command_panel::FloatingCommandPanel;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 enum Mode {
     Normal,
     Insert,
     Command,
+    // Terminal
+    // Select
+    // Search & Replace
+    // Explorer/Files
 }
 
 impl Display for Mode {
@@ -54,6 +59,7 @@ impl Command {
 
     fn clear(&mut self) {
         self.content.clear();
+        self.result = None;
     }
 
     fn pop(&mut self) {
@@ -213,10 +219,13 @@ fn main() -> io::Result<()> {
 fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic) -> io::Result<()> {
     loop {
         terminal.draw(|frame| {
-            //ui::draw(frame, &mut mosaic); // pass immutable state
+            let area = frame.area();
+            mosaic.panel_handler.draw(frame, area);
 
-            //println!("{:?}", frame.area());
-            mosaic.panel_handler.draw(frame, frame.area());
+            if mosaic.state_handler.mode == Mode::Command || mosaic.state_handler.mode == Mode::Normal {
+                let height = 2;
+                FloatingCommandPanel::draw(frame, Rect::new(0, area.height - height, area.width, height), &mosaic.state_handler);
+            }
         })?;
 
         //if mosaic.toast.is_some() {

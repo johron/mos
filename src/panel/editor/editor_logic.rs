@@ -1,10 +1,10 @@
 use ropey::Rope;
-use crate::{Mode, Mosaic};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Ord, PartialOrd)]
 pub struct Cursor {
     pub line: usize,
     pub col: usize,
+    pub goal_col: usize,
 }
 
 pub enum CursorDirection {
@@ -41,7 +41,7 @@ impl Editor {
     pub(crate) fn new(initial: Option<&str>, file_path: Option<String>) -> Self {
         let initial = initial.unwrap_or("");
         let rope = Rope::from_str(initial);
-        let cursors = vec![Cursor { line: 0, col: 0 }];
+        let cursors = vec![Cursor { line: 0, col: 0, goal_col: 0 }];
         Self {
             rope,
             cursors,
@@ -57,7 +57,7 @@ impl Editor {
         if let Ok(content) = std::fs::read_to_string(file_path) {
             self.rope = Rope::from_str(&content);
             self.file_path = Some(file_path.to_string());
-            self.cursors = vec![Cursor { line: 0, col: 0 }];
+            self.cursors = vec![Cursor { line: 0, col: 0, goal_col: 0 }];
             self.top_line = 0;
         }
     }
@@ -183,7 +183,7 @@ impl Editor {
             .map(|pos| {
                 let line = self.rope.char_to_line(pos);
                 let col = pos - self.rope.line_to_char(line);
-                Cursor { line, col }
+                Cursor { line, col, goal_col: col }
             })
             .collect();
 
@@ -242,7 +242,7 @@ impl Editor {
             .map(|pos| {
                 let line = self.rope.char_to_line(pos);
                 let col = pos - self.rope.line_to_char(line);
-                Cursor { line, col }
+                Cursor { line, col, goal_col: col }
             })
             .collect();
 
@@ -313,8 +313,8 @@ impl Editor {
                         c.line -= 1;
                         c.col = Editor::line_visible_len_rope(rope, c.line);
                     }
+                    c.goal_col = c.col;
                 }
-
                 CursorDirection::Right => {
                     let len = Editor::line_visible_len_rope(rope, c.line);
                     if c.col < len {
@@ -323,22 +323,22 @@ impl Editor {
                         c.line += 1;
                         c.col = 0;
                     }
+                    c.goal_col = c.col;
                 }
-
                 CursorDirection::Up => {
                     if c.line > 0 {
                         c.line -= 1;
-                        c.col = c.col.min(Editor::line_visible_len_rope(rope, c.line));
+                        let max_col = Editor::line_visible_len_rope(rope, c.line);
+                        c.col = c.goal_col.min(max_col);
                     }
                 }
-
                 CursorDirection::Down => {
                     if c.line + 1 < line_count {
                         c.line += 1;
-                        c.col = c.col.min(Editor::line_visible_len_rope(rope, c.line));
+                        let max_col = Editor::line_visible_len_rope(rope, c.line);
+                        c.col = c.goal_col.min(max_col);
                     }
                 }
-
                 _ => {}
             }
         }
@@ -366,6 +366,7 @@ impl Editor {
             new_cursors.push(Cursor {
                 line: target_line,
                 col: new_col,
+                goal_col: c.goal_col,
             });
         }
 
@@ -392,6 +393,7 @@ impl Editor {
             new_cursors.push(Cursor {
                 line: target_line,
                 col: new_col,
+                goal_col: c.goal_col,
             });
         }
 
@@ -408,7 +410,7 @@ impl Editor {
             .cursors
             .first()
             .cloned()
-            .unwrap_or(Cursor { line: 0, col: 0 });
+            .unwrap_or(Cursor { line: 0, col: 0, goal_col: 0 });
         self.cursors.clear();
         self.cursors.push(primary);
     }

@@ -20,9 +20,8 @@ impl Panel {
 #[derive(Debug, Clone, PartialEq)]
 pub enum PanelChild {
     Editor(EditorPanel),
-    Explorer(/*ExplorerPanel*/),
+    SubHandler(PanelHandler),
     Empty,
-    SubHandler(PanelHandler)
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -76,10 +75,6 @@ impl PanelHandler {
             }
         }
         None
-    }
-
-    fn round_down(num: u16) -> u16 {
-1
     }
 
     pub fn draw(&mut self, frame: &mut Frame, area: Rect) {
