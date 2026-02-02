@@ -1,4 +1,18 @@
-# Mosaic
+# Mos
+```
+                ___            ___
+               /   \          /   \        
+               \_   \        /  __/
+                _\   \      /  /__          
+                \___  \____/   __/         
+                    \_       _/            Modern mode-oriented configurable and
+                      | @ @  \_            extendable terminaled-based text editor
+                      |                    
+                    _/     /\
+                   /o)  (o/\ \_
+                   \_____/ /
+                     \____/ 
+```
 - (hopefully going to be a) Modern configurable terminal-based text editor
 
 ## TODO
