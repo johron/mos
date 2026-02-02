@@ -1,4 +1,4 @@
-use crate::Mosaic;
+use crate::Mos;
 
 #[derive(Debug, Clone)]
 pub struct CommandSpace {
@@ -9,7 +9,7 @@ pub struct CommandSpace {
 #[derive(Debug, Clone)]
 pub(crate) struct Command {
     pub(crate) name: String,
-    pub(crate) handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>,
+    pub(crate) handler: fn(&mut Mos, Vec<String>) -> Result<String, String>,
 }
 
 #[derive(Debug, Clone)]
@@ -45,7 +45,7 @@ impl CommandHandler { // TODO: remove command spaces just have string and use cm
         }
     }
 
-    pub fn register(&mut self, name: String, namespace: &str, handler: fn(&mut Mosaic, Vec<String>) -> Result<String, String>) {
+    pub fn register(&mut self, name: String, namespace: &str, handler: fn(&mut Mos, Vec<String>) -> Result<String, String>) {
         let command = Command {
             name,
             handler,

@@ -81,7 +81,7 @@ struct Toast {
 }
 
 #[derive(Debug, Clone)]
-struct Mosaic{
+struct Mos{
     toast: Option<Toast>,
 
     panel_handler: PanelHandler,
@@ -91,7 +91,7 @@ struct Mosaic{
     shortcut_handler: ShortcutHandler,
 }
 
-impl Mosaic {
+impl Mos {
     fn new() -> Self {
         Self {
             toast: None,
@@ -148,12 +148,12 @@ impl Mosaic {
     fn register_commands(&mut self) {
         //self.editor.register_commands(&mut self.command_handler, &mut self.config_handler);
 
-       self.command_handler.register(String::from("q"), "@", |mosaic, _args| {
-           mosaic.state_handler.should_quit = true;
+       self.command_handler.register(String::from("q"), "@", |mos, _args| {
+           mos.state_handler.should_quit = true;
            Ok(String::from("Quit command executed"))
        });
-        //self.command_handler.register(String::from("len"), "@", |mosaic, _args| {
-        //    let mut editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+        //self.command_handler.register(String::from("len"), "@", |mos, _args| {
+        //    let mut editor = &mut mos.panel_handler.get_current_editor_panel().unwrap().editor;
         //    editor.input_str(format!("{}", editor.cursors.len()));
         //    Ok(String::from("Len command executed"))
         //});
@@ -196,14 +196,14 @@ fn main() -> io::Result<()> {
         }
     }
 
-    let mut mosaic = Mosaic::new();
-    mosaic.init();
+    let mut mos = Mos::new();
+    mos.init();
 
     if let Some(path) = file_path.as_ref() {
-        mosaic.open_in_current_editor(path);
+        mos.open_in_current_editor(path);
     }
 
-    let res = run(&mut terminal, mosaic);
+    let res = run(&mut terminal, mos);
 
     disable_raw_mode()?;
     crossterm::execute!(
@@ -216,28 +216,28 @@ fn main() -> io::Result<()> {
     res
 }
 
-fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mosaic: Mosaic) -> io::Result<()> {
+fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mos: Mos) -> io::Result<()> {
     loop {
         terminal.draw(|frame| {
             let area = frame.area();
-            mosaic.panel_handler.draw(frame, area);
+            mos.panel_handler.draw(frame, area);
 
-            if mosaic.state_handler.mode == Mode::Command || mosaic.state_handler.mode == Mode::Normal {
+            if mos.state_handler.mode == Mode::Command || mos.state_handler.mode == Mode::Normal {
                 let height = 2;
-                FloatingCommandPanel::draw(frame, Rect::new(0, area.height - height, area.width, height), &mosaic.state_handler);
+                FloatingCommandPanel::draw(frame, Rect::new(0, area.height - height, area.width, height), &mos.state_handler);
             }
         })?;
 
-        //if mosaic.toast.is_some() {
-        //    let toast = mosaic.toast.as_ref().unwrap();
+        //if mos.toast.is_some() {
+        //    let toast = mos.toast.as_ref().unwrap();
         //    if toast.start_time.elapsed() >= toast.duration {
-        //        mosaic.toast = None;
+        //        mos.toast = None;
         //    }
         //}
 
-        InputHandler::handle(&mut mosaic).expect("TODO: panic message");
+        InputHandler::handle(&mut mos).expect("TODO: panic message");
 
-        if mosaic.state_handler.should_quit {
+        if mos.state_handler.should_quit {
             break Ok(());
         }
     }

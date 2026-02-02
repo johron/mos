@@ -1,4 +1,4 @@
-use crate::{Command, Mode, Mosaic};
+use crate::{Command, Mode, Mos};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
 
@@ -11,13 +11,13 @@ impl InputHandler {
         Self {}
     }
 
-    pub(crate) fn handle(mosaic: &mut Mosaic) -> Result<(), Error> {
+    pub(crate) fn handle(mos: &mut Mos) -> Result<(), Error> {
         if event::poll(Duration::from_millis(10))? {
             let key_events = Self::collect_simultaneous_key_events(30)?;
             if !key_events.is_empty() {
-                mosaic.toast = None;
+                mos.toast = None;
 
-                Self::process_key_events(mosaic, key_events).expect("TODO: panic message");
+                Self::process_key_events(mos, key_events).expect("TODO: panic message");
             }
             //if let Event::Mouse(mouse_event) = event::read()? {
             //    // process mouse event
@@ -54,15 +54,15 @@ impl InputHandler {
         Ok(events)
     }
 
-    fn process_key_events(mosaic: &mut Mosaic, keys: Vec<KeyEvent>) -> Result<String, String> {
+    fn process_key_events(mos: &mut Mos, keys: Vec<KeyEvent>) -> Result<String, String> {
         // In Insert mode, handle regular character input directly without shortcut matching
-        if mosaic.state_handler.mode == Mode::Insert {
+        if mos.state_handler.mode == Mode::Insert {
             if let Some(first) = keys.first() {
                 // Check if this is a regular character without modifiers (except shift)
                 if let KeyCode::Char(_) = first.code {
                     if first.modifiers.is_empty() || first.modifiers.contains(KeyModifiers::SHIFT) {
                         // This is regular text input, handle it directly
-                        return Self::handle_input_mode(mosaic, *first);
+                        return Self::handle_input_mode(mos, *first);
                     }
                 }
             }
@@ -93,8 +93,8 @@ impl InputHandler {
         pressed.sort();
         pressed.dedup();
 
-        for shortcut in mosaic.shortcut_handler.get_shortcuts() {
-            let mode = format!("mode.{}", mosaic.state_handler.mode.clone().to_string().to_lowercase());
+        for shortcut in mos.shortcut_handler.get_shortcuts() {
+            let mode = format!("mode.{}", mos.state_handler.mode.clone().to_string().to_lowercase());
 
             if shortcut.name.starts_with(mode.as_str()) || !shortcut.name.starts_with("mode.") {
                 let mut input: Vec<String> = shortcut.input.split('|').map(String::from).collect();
@@ -105,16 +105,16 @@ impl InputHandler {
                     split.sort();
 
                     if split == pressed {
-                        return (shortcut.handler)(mosaic);
+                        return (shortcut.handler)(mos);
                     }
                 }
             }
         }
 
         if let Some(first) = keys.first() {
-            match mosaic.state_handler.mode {
-                Mode::Insert => Self::handle_input_mode(mosaic, *first),
-                Mode::Command => Self::handle_command_mode(mosaic, *first),
+            match mos.state_handler.mode {
+                Mode::Insert => Self::handle_input_mode(mos, *first),
+                Mode::Command => Self::handle_command_mode(mos, *first),
                 _ => Ok(String::from("Input is unmapped")),
             }
         } else {
@@ -122,12 +122,12 @@ impl InputHandler {
         }
     }
 
-    fn handle_input_mode(mosaic: &mut Mosaic, key_event: KeyEvent) -> Result<String, String> {
-        if mosaic.panel_handler.get_current_editor_panel().is_none() {
+    fn handle_input_mode(mos: &mut Mos, key_event: KeyEvent) -> Result<String, String> {
+        if mos.panel_handler.get_current_editor_panel().is_none() {
             return Err(String::from("No active editor"))
         }
 
-        let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+        let editor = &mut mos.panel_handler.get_current_editor_panel().unwrap().editor;
 
         match key_event.code {
             KeyCode::Char(c) => {
@@ -143,23 +143,23 @@ impl InputHandler {
         Ok(String::from("Inputted"))
     }
 
-    fn handle_command_mode(mosaic: &mut Mosaic, key: KeyEvent) -> Result<String, String> {
+    fn handle_command_mode(mos: &mut Mos, key: KeyEvent) -> Result<String, String> {
         match key.code {
             KeyCode::Enter => {
-                let res = Self::handle_command(mosaic);
+                let res = Self::handle_command(mos);
 
-                mosaic.state_handler.command = Command {
+                mos.state_handler.command = Command {
                     content: String::new(),
                     result: Some(res.unwrap_or_else(|e| format!("Error: {}", e))),
                 };
 
-                mosaic.state_handler.mode = Mode::Normal;
+                mos.state_handler.mode = Mode::Normal;
             },
             KeyCode::Char(c) => {
-                mosaic.state_handler.command += c.to_string().as_str();
+                mos.state_handler.command += c.to_string().as_str();
             },
             KeyCode::Backspace => {
-                mosaic.state_handler.command.pop();
+                mos.state_handler.command.pop();
             },
             _ => {
                 return Ok(String::from("Unmapped input"));
@@ -169,10 +169,10 @@ impl InputHandler {
         Ok(String::from("Inputted command"))
     }
 
-    fn handle_command(mosaic: &mut Mosaic) -> Result<String, String> {
-        let args = mosaic.state_handler.command.content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
+    fn handle_command(mos: &mut Mos) -> Result<String, String> {
+        let args = mos.state_handler.command.content.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>();
 
-        let commands = mosaic.command_handler.get_commands("@");
+        let commands = mos.command_handler.get_commands("@");
 
         if args.is_empty() || args[0].is_empty() {
             return Err(String::from("No command provided"));
@@ -180,7 +180,7 @@ impl InputHandler {
 
         if let Some(cmds) = commands {
             if let Some(command) = cmds.iter().find(|cmd| cmd.name == args[0]) {
-                (command.handler)(mosaic, args)
+                (command.handler)(mos, args)
             } else {
                 Err(format!("Unknown command: {}", args[0]))
             }

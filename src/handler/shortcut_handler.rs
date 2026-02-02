@@ -1,10 +1,10 @@
-use crate::Mosaic;
+use crate::Mos;
 
 #[derive(Debug, Clone)]
 pub struct Shortcut {
     pub name: String,
     pub input: String,
-    pub handler: fn(&mut Mosaic) -> Result<String, String>,
+    pub handler: fn(&mut Mos) -> Result<String, String>,
 }
 
 #[derive(Debug, Clone)]
@@ -19,7 +19,7 @@ impl ShortcutHandler {
         }
     }
 
-    pub fn register(&mut self, name: String, input: String, handler: fn(&mut Mosaic) -> Result<String, String>) {
+    pub fn register(&mut self, name: String, input: String, handler: fn(&mut Mos) -> Result<String, String>) {
         let shortcut = Shortcut {
             name,
             input,

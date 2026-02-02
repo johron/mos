@@ -2,26 +2,26 @@ use std::io::Write;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct Config {
-    pub mosaic: MosaicConfig,
+    pub mos: MosConfig,
     pub editor: EditorConfig,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            mosaic: MosaicConfig::default(),
+            mos: MosConfig::default(),
             editor: EditorConfig::default(),
         }
     }
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
-pub struct MosaicConfig {
+pub struct MosConfig {
     pub auto_save: bool,
     pub save_interval: usize,
 }
 
-impl Default for MosaicConfig {
+impl Default for MosConfig {
     fn default() -> Self {
         Self {
             auto_save: true,
@@ -236,7 +236,7 @@ impl ConfigHandler {
     }
 
     pub fn load_config(&mut self) {
-        let path = std::path::Path::new("./config/mosaic_config.toml");
+        let path = std::path::Path::new("./config/mos_config.toml");
 
         // ensure config directory exists
         if let Some(parent) = path.parent() {

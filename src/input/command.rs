@@ -1,17 +1,17 @@
-use crate::{Command, Mode, Mosaic};
+use crate::{Command, Mode, Mos};
 use crossterm::event::{KeyCode, KeyEvent};
 
 
 
-/*pub(crate) fn _handle_command(mosaic: &mut Mosaic) -> Result<String, Error> {
-    let editor = &mut mosaic.editor;
-    let args = mosaic.command.content.as_str().split(' ').collect::<Vec<_>>();
+/*pub(crate) fn _handle_command(mos: &mut Mos) -> Result<String, Error> {
+    let editor = &mut mos.editor;
+    let args = mos.command.content.as_str().split(' ').collect::<Vec<_>>();
 
     match args[0] {
         "q" => {
             let current_content = editor.rope.to_string();
 
-            if let Some(path) = mosaic.editor.file_path.as_ref() {
+            if let Some(path) = mos.editor.file_path.as_ref() {
                 match std::fs::read_to_string(path) {
                     Ok(disk) => {
                         if disk != current_content {
@@ -30,25 +30,25 @@ use crossterm::event::{KeyCode, KeyEvent};
                 }
             }
 
-            //mosaic.quit();
+            //mos.quit();
             Ok(String::from("Quit command executed"))
         },
         "q!" => {
-            //mosaic.quit();
+            //mos.quit();
             Ok(String::from("Force quit command executed"))
         },
         "w" => {
             let content = editor.rope.to_string();
 
-            if mosaic.editor.file_path.is_none() { // TOOO: arg isnt prioritized, i need to fix, but i tried and this no
+            if mos.editor.file_path.is_none() { // TOOO: arg isnt prioritized, i need to fix, but i tried and this no
                 if args.len() >= 2 {
-                    mosaic.editor.file_path = Some(args[1].to_string());
-                } else if mosaic.editor.file_path.is_none() {
+                    mos.editor.file_path = Some(args[1].to_string());
+                } else if mos.editor.file_path.is_none() {
                     return Err(Error::new(std::io::ErrorKind::Other, "No file path provided"));
                 }
             }
 
-            let file_path = mosaic.editor
+            let file_path = mos.editor
                 .file_path
                 .as_ref()
                 .unwrap();
@@ -67,7 +67,7 @@ use crossterm::event::{KeyCode, KeyEvent};
         "toast" => {
             if args.len() >= 2 {
                 let message = args[1..].join(" ");
-                mosaic.show_toast(&message, Duration::from_secs(3));
+                mos.show_toast(&message, Duration::from_secs(3));
                 Ok(format!("Toast message set: {}", message))
             } else {
                 Err(Error::new(std::io::ErrorKind::Other, "No toast message provided"))
@@ -75,7 +75,7 @@ use crossterm::event::{KeyCode, KeyEvent};
         },
         _ => {
             if args[0].starts_with("2") {
-                let shell_command = &mosaic.command.content[1..];
+                let shell_command = &mos.command.content[1..];
                 let output = if cfg!(target_os = "windows") {
                     std::process::Command::new("cmd")
                         .args(&["/C", shell_command])

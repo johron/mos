@@ -1,7 +1,7 @@
 use crate::handler::config_handler::ConfigHandler;
 use crate::handler::shortcut_handler::ShortcutHandler;
 use crate::panel::editor::editor_logic::CursorDirection;
-use crate::{Mode, Mosaic};
+use crate::{Mode, Mos};
 
 pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
     let editor = &config_handler.config.editor;
@@ -38,32 +38,32 @@ pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler
     shortcut_handler.register(String::from("mode.insert.add_cursor_above"), editor.insert_mode.shortcuts.add_cursor_above.clone(), add_cursor_above);
 }
 
-fn enter_normal_mode(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.state_handler.mode = Mode::Normal;
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = true;
+fn enter_normal_mode(mos: &mut Mos) -> Result<String, String> {
+    mos.state_handler.mode = Mode::Normal;
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = true;
     Ok(String::from("Entered normal mode"))
 }
 
-fn enter_insert_mode(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.state_handler.mode = Mode::Insert;
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = false;
-    mosaic.state_handler.command.clear();
+fn enter_insert_mode(mos: &mut Mos) -> Result<String, String> {
+    mos.state_handler.mode = Mode::Insert;
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = false;
+    mos.state_handler.command.clear();
     Ok(String::from("Entered normal mode"))
 }
 
-fn enter_command_mode(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.state_handler.command.result = None;
-    mosaic.state_handler.mode = Mode::Command;
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = true;
+fn enter_command_mode(mos: &mut Mos) -> Result<String, String> {
+    mos.state_handler.command.result = None;
+    mos.state_handler.mode = Mode::Command;
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.insert_inactive = true;
     Ok(String::from("Entered command mode"))
 }
 
-fn newline(mosaic: &mut Mosaic) -> Result<String, String> {
-    if mosaic.panel_handler.get_current_editor_panel().is_none() {
+fn newline(mos: &mut Mos) -> Result<String, String> {
+    if mos.panel_handler.get_current_editor_panel().is_none() {
         return Err(String::from("No active editor"))
     }
 
-    let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
+    let editor = &mut mos.panel_handler.get_current_editor_panel().unwrap().editor;
 
     let current_top_line = editor.rope.get_line(editor.cursors[0].line).unwrap().to_string();
     let mut preceding_whitespace = String::new();
@@ -84,23 +84,23 @@ fn newline(mosaic: &mut Mosaic) -> Result<String, String> {
     Ok(String::from("Newline"))
 }
 
-fn backspace(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.backspace();
+fn backspace(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.backspace();
     Ok(String::from("Backspace"))
 }
 
-fn tab(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.tab();
+fn tab(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.tab();
     Ok(String::from("Tab"))
 }
 
-fn reverse_tab(mosaic: &mut Mosaic) -> Result<String, String> { // TODO: Make sure that it is the preceding spaces that are actually remove
-    if mosaic.panel_handler.get_current_editor_panel().is_none() {
+fn reverse_tab(mos: &mut Mos) -> Result<String, String> { // TODO: Make sure that it is the preceding spaces that are actually remove
+    if mos.panel_handler.get_current_editor_panel().is_none() {
         return Err(String::from("No active editor"))
     }
 
-    let editor = &mut mosaic.panel_handler.get_current_editor_panel().unwrap().editor;
-    let tab_size = mosaic.config_handler.config.editor.tab_size;
+    let editor = &mut mos.panel_handler.get_current_editor_panel().unwrap().editor;
+    let tab_size = mos.config_handler.config.editor.tab_size;
 
     let current_top_line = editor.rope.get_line(editor.cursors[0].line).unwrap().to_string();
     let mut preceding_whitespace = String::new();
@@ -123,47 +123,47 @@ fn reverse_tab(mosaic: &mut Mosaic) -> Result<String, String> { // TODO: Make su
     Ok(String::from("Reverse tab"))
 }
 
-fn cursor_left(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Left);
+fn cursor_left(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Left);
     Ok(String::from("Move left"))
 }
 
-fn cursor_up(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Up);
+fn cursor_up(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Up);
     Ok(String::from("Move up"))
 }
 
-fn cursor_down(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Down);
+fn cursor_down(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Down);
     Ok(String::from("Move down"))
 }
 
-fn cursor_right(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Right);
+fn cursor_right(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::Right);
     Ok(String::from("Move right"))
 }
 
-fn skip_word_left(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::WordLeft);
+fn skip_word_left(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::WordLeft);
     Ok(String::from("Skip word left"))
 }
 
-fn skip_word_right(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::WordRight);
+fn skip_word_right(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.move_cursor(CursorDirection::WordRight);
     Ok(String::from("Skip word right"))
 }
 
-fn add_cursor_below(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_below();
+fn add_cursor_below(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_below();
     Ok(String::from("Added cursor below"))
 }
 
-fn add_cursor_above(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_above();
+fn add_cursor_above(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.add_cursor_above();
     Ok(String::from("Added cursor above"))
 }
 
-fn clear_cursors(mosaic: &mut Mosaic) -> Result<String, String> {
-    mosaic.panel_handler.get_current_editor_panel().unwrap().editor.clear_cursors();
+fn clear_cursors(mos: &mut Mos) -> Result<String, String> {
+    mos.panel_handler.get_current_editor_panel().unwrap().editor.clear_cursors();
     Ok(String::from("Cleared extra cursors"))
 }
