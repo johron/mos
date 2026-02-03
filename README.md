@@ -7,8 +7,8 @@
                 \___  \____/   __/         
                     \_       _/            Modern mode-oriented configurable and
                       |0   0 \_            extendable terminaled-based text editor
-                     ||                    
-                   _//    /\
+                      |                    
+                    _/    /\
                    /o)  (o/\ \_
                    \_____/ /
                      \_-__/ 
