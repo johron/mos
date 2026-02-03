@@ -248,14 +248,7 @@ impl Editor {
 
         self.normalize_geometry();
     }
-
-
-    pub fn tab(&mut self, n: usize) {
-        for _ in 0..n {
-            self.input(' ');
-        }
-    }
-
+    
     fn line_visible_len_rope(rope: &Rope, line: usize) -> usize {
         if line >= rope.len_lines() {
             return 0;

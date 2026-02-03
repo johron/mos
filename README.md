@@ -16,7 +16,10 @@
 - (hopefully going to be a) Modern mode-oriented configurable and extendable terminal-based text editor
 
 ## TODO
-- [ ] some times when moving the cursor, and backspacing the cursor goes to the end of the line when it shouldnt, it should be before the letters that were pushed up by the backsapce..
+- [ ] Reverse tab can remove non whitespace characters, fix
+- [ ] Refactor command system
+- [ ] Remove old code
+- [ ] Syntax entries should have fallback with writing when no syntax is found
 
 ## InDev images
 <img width="1919" height="1018" alt="image" src="https://github.com/user-attachments/assets/b8df7e28-06f2-4a5e-9c75-69d6ddf3a28e" />

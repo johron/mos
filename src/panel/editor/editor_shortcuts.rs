@@ -91,7 +91,9 @@ fn backspace(mos: &mut Mos) -> Result<String, String> {
 
 fn tab(mos: &mut Mos) -> Result<String, String> {
     let tab_size = mos.config_handler.config.editor.tab_size;
-    mos.panel_handler.get_current_editor_panel().unwrap().editor.tab(tab_size);
+    for _ in 0..tab_size {
+        mos.panel_handler.get_current_editor_panel().unwrap().editor.input(' ');
+    }
     Ok(String::from("Tab"))
 }
 
