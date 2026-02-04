@@ -11,6 +11,14 @@ use crate::handler::state_handler::StateHandler;
 use crate::panel::command::command_panel::FloatingCommandPanel;
 use crate::panel::editor::editor_panel::EditorPanel;
 use crate::panel::editor::editor_shortcuts;
+
+#[cfg(not(windows))]
+use crossterm::{
+    event::PushKeyboardEnhancementFlags,
+    event::KeyboardEnhancementFlags,
+    event::PopKeyboardEnhancementFlags
+};
+
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen};
 use ratatui::backend::CrosstermBackend;
@@ -122,10 +130,6 @@ impl Mos {
     }
 
     fn init(&mut self) {
-        //let _ = crossterm::execute!(io::stdout(), PushKeyboardEnhancementFlags(
-        //    KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-        //));
-
         self.panel_handler.add_panel(
             Panel::new(String::from("editor_1"), PanelChild::Editor(EditorPanel::new()))
         );
@@ -177,9 +181,13 @@ fn main() -> io::Result<()> {
     let mut stdout = stdout.lock();
 
     enable_raw_mode()?;
-    //crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags( // TODO: check if keyboard enhancements are supported
-    //    KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
-    //))?;
+
+    #[cfg(not(windows))] // keyboard enhancements don't work on windows
+    crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags(
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+    ))?;
+
+    #[cfg(windows)]
     crossterm::execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(stdout);
@@ -210,11 +218,22 @@ fn main() -> io::Result<()> {
     let res = run(&mut terminal, mos);
 
     disable_raw_mode()?;
+
+    #[cfg(not(windows))]
     crossterm::execute!(
         terminal.backend_mut(),
         LeaveAlternateScreen,
         DisableMouseCapture,
+        PopKeyboardEnhancementFlags // dette ser ikke ut som at det fungerer.. kan ikke lukke nano etter å ha kjørt mos
     )?;
+
+    #[cfg(windows)]
+    crossterm::execute!(
+        terminal.backend_mut(),
+        LeaveAlternateScreen,
+        DisableMouseCapture
+    )?;
+
     terminal.show_cursor()?;
 
     res
