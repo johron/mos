@@ -5,9 +5,10 @@ use crate::{Mode, Mos};
 
 pub fn register_shortcuts(shortcut_handler: &mut ShortcutHandler, config_handler: &ConfigHandler) {
     let editor = &config_handler.config.editor;
+    let mos = &config_handler.config.mos;
 
     // Editor
-    shortcut_handler.register(String::from("editor.enter_normal_mode"), editor.shortcuts.mos_key.clone(), enter_normal_mode);
+    shortcut_handler.register(String::from("editor.enter_normal_mode"), mos.shortcuts.mos_key.clone(), enter_normal_mode);
     shortcut_handler.register(String::from("editor.clear_cursors"), editor.shortcuts.clear_cursors.clone(), clear_cursors);
 
     // Normal

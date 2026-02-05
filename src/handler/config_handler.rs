@@ -21,6 +21,7 @@ impl Default for AppConfig {
 pub struct MosConfig {
     pub auto_save: bool,
     pub save_interval: usize,
+    pub shortcuts: MosShortcuts,
 }
 
 impl Default for MosConfig {
@@ -28,6 +29,22 @@ impl Default for MosConfig {
         Self {
             auto_save: true,
             save_interval: 1000, // in milliseconds (only if there are changes)
+            shortcuts: MosShortcuts::default(),
+        }
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
+pub struct MosShortcuts {
+    pub mos_key: String,
+    pub new_editor: String,
+}
+
+impl Default for MosShortcuts {
+    fn default() -> Self {
+        Self {
+            mos_key: String::from("f12"),
+            new_editor: String::from("f12+enter"),
         }
     }
 }
@@ -62,14 +79,12 @@ impl Default for EditorConfig {
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 #[derive(Clone)]
 pub struct EditorShortcuts {
-    pub mos_key: String,
     pub clear_cursors: String,
 }
 
 impl Default for EditorShortcuts {
     fn default() -> Self {
         Self {
-            mos_key: String::from("f12"),
             clear_cursors: String::from("esc"),
         }
     }

@@ -169,6 +169,16 @@ impl Mos {
 
     fn register_shortcuts(&mut self) {
         editor_shortcuts::register_shortcuts(&mut self.shortcut_handler, &mut self.config_handler);
+
+        let mos = &self.config_handler.config.mos;
+
+        self.shortcut_handler.register(String::from("mos.new_editor"), mos.shortcuts.new_editor.clone(), |mos| {
+            println!("New editor shortcut triggered");
+            let id = format!("editor_{}", mos.panel_handler.children.len() + 1);
+            mos.panel_handler.add_panel(Panel::new(id.clone(), PanelChild::Editor(EditorPanel::new())));
+            mos.panel_handler.set_current_panel(Some(id));
+            Ok(String::from("New editor opened"))
+        });
     }
     
     fn reload(&mut self) {
