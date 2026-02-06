@@ -37,14 +37,26 @@ impl Default for MosConfig {
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct MosShortcuts {
     pub mos_key: String,
+    pub mos_key_as_mod: String,
     pub new_editor: String,
+    pub panel_quit: String,
+    pub panel_left: String,
+    pub panel_right: String,
+    pub panel_up: String,
+    pub panel_down: String,
 }
 
 impl Default for MosShortcuts {
     fn default() -> Self {
         Self {
             mos_key: String::from("f12"),
-            new_editor: String::from("f12+enter"),
+            mos_key_as_mod: String::from("shift+f12"),
+            new_editor: String::from("enter"), // actually mos_key_as_mod + "enter"
+            panel_quit: String::from("q"), // actually mos_key_as_mod + "q"
+            panel_left: String::from("left | h"), // actually mos_key_as_mod + "left | h"
+            panel_right: String::from("right | ø"), // actually mos_key_as_mod + "right | ø"
+            panel_up: String::from("up | k"), // actually mos_key_as_mod + "up | k"
+            panel_down: String::from("down | l"), // actually mos_key_as_mod + "down | l"
         }
     }
 }

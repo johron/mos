@@ -27,7 +27,7 @@ pub enum PanelChild {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PanelHandler {
     pub children: Vec<Panel>,
-    current_panel_id: Option<String>,
+    pub current_panel: Option<String>,
     direction: Direction
 }
 
@@ -35,21 +35,43 @@ impl PanelHandler {
     pub fn new(direction: Direction) -> Self {
         Self {
             children: Vec::new(),
-            current_panel_id: None,
+            current_panel: None,
             direction
         }
     }
     
     pub fn set_current_panel(&mut self, id: Option<String>) {
-        self.current_panel_id = id;
+        self.current_panel = id;
     }
     
     pub fn add_panel(&mut self, panel: Panel) {
         self.children.push(panel);
     }
-    
+
+    pub fn remove_panel(&mut self, id: &str) {
+        self.children.retain(|p| p.id != id);
+    }
+
+    pub fn set_current_panel_relative(&mut self, offset: i32) {
+        if self.children.is_empty() {
+            return;
+        }
+
+        if let Some(current_id) = &self.current_panel {
+            if let Some(index) = self.children.iter().position(|p| &p.id == current_id) {
+                let new_index = (index as i32 + offset).max(0) as usize;
+                let new_index = new_index.min(self.children.len() - 1);
+                if new_index < self.children.len() {
+                    self.current_panel = Some(self.children[new_index].id.clone());
+                }
+            }
+        } else if !self.children.is_empty() {
+            self.current_panel = Some(self.children[0].id.clone());
+        }
+    }
+
    pub fn get_current_panel(&mut self) -> Option<&mut Panel> {
-       if let Some(id) = self.current_panel_id.clone() {
+       if let Some(id) = self.current_panel.clone() {
            self.get_panel(&id)
        } else {
            None

@@ -160,6 +160,7 @@ impl Mos {
            mos.state_handler.should_quit = true;
            Ok(String::from("Quit command executed"))
        });
+
         //self.command_handler.register(String::from("len"), "@", |mos, _args| {
         //    let mut editor = &mut mos.panel_handler.get_current_editor_panel().unwrap().editor;
         //    editor.input_str(format!("{}", editor.cursors.len()));
@@ -172,12 +173,50 @@ impl Mos {
 
         let mos = &self.config_handler.config.mos;
 
-        self.shortcut_handler.register(String::from("mos.new_editor"), mos.shortcuts.new_editor.clone(), |mos| {
-            println!("New editor shortcut triggered");
+        // Register mos shortcuts with mos_key_as_mod as a prefix
+        // Note: mos_key and mos_key_as_mod themselves are handled directly in input_handler
+        // These shortcuts are for other mos-specific operations
+
+        let new_editor_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.new_editor);
+        self.shortcut_handler.register(String::from("mos.new_editor"), new_editor_shortcut, |mos| {
             let id = format!("editor_{}", mos.panel_handler.children.len() + 1);
             mos.panel_handler.add_panel(Panel::new(id.clone(), PanelChild::Editor(EditorPanel::new())));
             mos.panel_handler.set_current_panel(Some(id));
             Ok(String::from("New editor opened"))
+        });
+
+        let panel_quit_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.panel_quit);
+        self.shortcut_handler.register(String::from("mos.panel_quit"), panel_quit_shortcut, |mos| {
+            if let Some(current_id) = &mos.panel_handler.current_panel {
+                let id = current_id.clone();
+                mos.panel_handler.remove_panel(&id);
+                mos.panel_handler.set_current_panel(mos.panel_handler.children.last().map(|p| p.id.clone()));
+                Ok(String::from("Current panel closed"))
+            } else {
+                Err(String::from("No panel to close"))
+            }
+        });
+
+        let panel_left_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.panel_left);
+        self.shortcut_handler.register(String::from("mos.panel_left"), panel_left_shortcut, |mos| {
+            mos.panel_handler.set_current_panel_relative(-1);
+            Ok(String::from("Moved to left panel"))
+        });
+
+        let panel_right_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.panel_right);
+        self.shortcut_handler.register(String::from("mos.panel_right"), panel_right_shortcut, |mos| {
+            mos.panel_handler.set_current_panel_relative(1);
+            Ok(String::from("Moved to right panel"))
+        });
+
+        let panel_up_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.panel_up);
+        self.shortcut_handler.register(String::from("mos.panel_up"), panel_up_shortcut, |_mos| {
+            Ok(String::from("Moved to upper panel"))
+        });
+
+        let panel_down_shortcut = format!("{} + {}", mos.shortcuts.mos_key_as_mod, mos.shortcuts.panel_down);
+        self.shortcut_handler.register(String::from("mos.panel_down"), panel_down_shortcut, |_mos| {
+            Ok(String::from("Moved to lower panel"))
         });
     }
     
@@ -250,6 +289,8 @@ fn main() -> io::Result<()> {
 }
 
 fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mos: Mos) -> io::Result<()> {
+    let mut input_handler = InputHandler::new();
+
     loop {
         terminal.draw(|frame| {
             let area = frame.area();
@@ -268,7 +309,7 @@ fn run(terminal: &mut Terminal<CrosstermBackend<StdoutLock>>, mut mos: Mos) -> i
         //    }
         //}
 
-        InputHandler::handle(&mut mos).expect("TODO: panic message");
+        input_handler.handle(&mut mos).expect("TODO: panic message");
 
         if mos.state_handler.should_quit {
             break Ok(());

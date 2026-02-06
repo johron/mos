@@ -45,7 +45,7 @@ impl EditorPanel {
 
         frame.render_widget(paragraph, chunks[0]);
 
-        let is_insert_inactive = matches!(self.editor.insert_inactive, true);
+        let is_inactive = matches!(self.editor.insert_inactive, true);
 
         for cursor in &self.editor.cursors {
             let x = chunks[0].x + 5 + cursor.col as u16; // 5 for gutter
@@ -54,7 +54,7 @@ impl EditorPanel {
                 Paragraph::new("")
                     .style(Style::default()
                         .add_modifier(Modifier::REVERSED)
-                        .fg(if is_insert_inactive { Color::DarkGray } else { Color::White })),
+                        .fg(if is_inactive { Color::DarkGray } else { Color::White })),
                 Rect::new(x, y, 1, 1),
             );
         }

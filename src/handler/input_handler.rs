@@ -1,23 +1,29 @@
 use crate::{Command, Mode, Mos};
 use crossterm::event::{self, Event, KeyCode, KeyEvent, KeyModifiers};
 use std::io::Error;
-
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 #[derive(Clone, Debug)]
-pub struct InputHandler {}
+pub struct InputHandler {
+    mos_key_as_mod_pressed: bool,
+    mos_key_as_mod_timestamp: Option<Instant>,
+}
+
 impl InputHandler {
     pub(crate) fn new() -> InputHandler {
-        Self {}
+        Self {
+            mos_key_as_mod_pressed: false,
+            mos_key_as_mod_timestamp: None,
+        }
     }
 
-    pub(crate) fn handle(mos: &mut Mos) -> Result<(), Error> {
+    pub(crate) fn handle(&mut self, mos: &mut Mos) -> Result<(), Error> {
         if event::poll(Duration::from_millis(10))? {
             let key_events = Self::collect_simultaneous_key_events(30)?;
             if !key_events.is_empty() {
                 mos.toast = None;
 
-                Self::process_key_events(mos, key_events).expect("TODO: panic message");
+                self.process_key_events(mos, key_events).expect("TODO: panic message");
             }
             //if let Event::Mouse(mouse_event) = event::read()? {
             //    // process mouse event
@@ -54,7 +60,47 @@ impl InputHandler {
         Ok(events)
     }
 
-    fn process_key_events(mos: &mut Mos, keys: Vec<KeyEvent>) -> Result<String, String> {
+    fn process_key_events(&mut self, mos: &mut Mos, keys: Vec<KeyEvent>) -> Result<String, String> {
+        let config = mos.config_handler.config.clone();
+        let mos_key = config.mos.shortcuts.mos_key.clone();
+        let mos_key_as_mod = config.mos.shortcuts.mos_key_as_mod.clone();
+
+        // Check if mos_key is pressed (single key press to normal mode)
+        if keys.len() == 1 {
+            let key = keys[0];
+            let key_str = key.code.to_string().replace(" ", "").to_lowercase();
+            let modifier_str = key.modifiers.to_string().to_lowercase();
+
+            let full_key = if modifier_str.is_empty() {
+                key_str.clone()
+            } else {
+                format!("{}+{}", modifier_str.replace(" ", ""), key_str)
+            };
+
+            if full_key == mos_key.to_lowercase() {
+                mos.state_handler.mode = Mode::Normal;
+                return Ok(String::from("Switched to Normal mode"));
+            }
+
+            // Check if mos_key_as_mod is pressed
+            if full_key == mos_key_as_mod.to_lowercase() {
+                self.mos_key_as_mod_pressed = true;
+                self.mos_key_as_mod_timestamp = Some(Instant::now());
+                return Ok(String::from("mos_key_as_mod activated"));
+            }
+        }
+
+        // If mos_key_as_mod was pressed, combine it with current keys
+        let mut pressed: Vec<String> = vec![];
+
+        if self.mos_key_as_mod_pressed {
+            // Add mos_key_as_mod as a prefix to all current keys
+            let mod_parts: Vec<String> = mos_key_as_mod.split('+').map(|s| s.to_lowercase()).collect();
+            pressed.extend(mod_parts);
+            self.mos_key_as_mod_pressed = false;
+            self.mos_key_as_mod_timestamp = None;
+        }
+
         // In Insert mode, handle regular character input directly without shortcut matching
         if mos.state_handler.mode == Mode::Insert {
             if let Some(first) = keys.first() {
@@ -62,13 +108,11 @@ impl InputHandler {
                 if let KeyCode::Char(_) = first.code {
                     if first.modifiers.is_empty() || first.modifiers.contains(KeyModifiers::SHIFT) {
                         // This is regular text input, handle it directly
-                        return Self::handle_input_mode(mos, *first);
+                        return self.handle_input_mode(mos, *first);
                     }
                 }
             }
         }
-
-        let mut pressed: Vec<String> = vec![];
 
         for key in keys.iter() {
             let modifier = key.modifiers.to_string();
@@ -113,7 +157,7 @@ impl InputHandler {
 
         if let Some(first) = keys.first() {
             match mos.state_handler.mode {
-                Mode::Insert => Self::handle_input_mode(mos, *first),
+                Mode::Insert => self.handle_input_mode(mos, *first),
                 Mode::Command => Self::handle_command_mode(mos, *first),
                 _ => Ok(String::from("Input is unmapped")),
             }
@@ -122,7 +166,7 @@ impl InputHandler {
         }
     }
 
-    fn handle_input_mode(mos: &mut Mos, key_event: KeyEvent) -> Result<String, String> {
+    fn handle_input_mode(&mut self, mos: &mut Mos, key_event: KeyEvent) -> Result<String, String> {
         if mos.panel_handler.get_current_editor_panel().is_none() {
             return Err(String::from("No active editor"))
         }
