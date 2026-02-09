@@ -14,4 +14,3 @@
                      \_-__/ 
 ```
 - (hopefully going to be a) Modern mode-oriented configurable and extendable terminal-based text editor
-```
