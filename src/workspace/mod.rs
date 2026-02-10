@@ -1,2 +1,2 @@
-mod workspace;
-mod layout;
+pub mod workspace;
+pub mod layout;
