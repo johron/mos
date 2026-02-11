@@ -3,7 +3,7 @@ use ratatui::Frame;
 use ratatui::layout::Rect;
 use ropey::Rope;
 use crate::event::event::Event;
-use crate::panel::panel::{Panel, PanelId};
+use crate::panel::panel::{Panel, MosId};
 
 pub struct Cursor {
     pub line: usize,
@@ -38,8 +38,8 @@ impl EditorPanel {
 }
 
 impl Panel for EditorPanel {
-    fn id(&self) -> PanelId {
-        PanelId::new()
+    fn id(&self) -> MosId {
+        MosId::new()
     }
 
     fn title(&self) -> &str {

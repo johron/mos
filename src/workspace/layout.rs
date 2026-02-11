@@ -1,4 +1,4 @@
-use crate::panel::panel::PanelId;
+use crate::panel::panel::MosId;
 
 pub enum Axis {
     Horizontal,
@@ -12,7 +12,7 @@ pub enum Layout {
         children: Vec<Layout>,
     },
     Tabs{
-        tabs: Vec<PanelId>,
+        tabs: Vec<MosId>,
         active: usize,
     },
 }

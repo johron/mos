@@ -1,6 +1,16 @@
 use crossterm::event::Event;
 use ratatui::Frame;
+use uuid::Uuid;
 use crate::workspace::workspace::Workspace;
+
+#[derive(Eq, Hash, PartialEq)]
+pub struct MosId(Uuid);
+
+impl MosId {
+    pub fn new() -> Self {
+        MosId(Uuid::new_v4())
+    }
+}
 
 pub struct Mos {
     pub should_quit: bool,

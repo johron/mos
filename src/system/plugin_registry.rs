@@ -1,16 +1,16 @@
+use std::collections::HashMap;
+use crate::app::MosId;
 use crate::plugin::plugin::Plugin;
 use crate::system::panel_registry::PanelRegistry;
 
 pub struct PluginRegistry {
     plugins: Vec<Box<dyn Plugin>>,
-    panel_registry: PanelRegistry,
 }
 
 impl PluginRegistry {
     pub fn new() -> Self {
         Self {
             plugins: Vec::new(),
-            panel_registry: PanelRegistry::new(),
         }
     }
 
@@ -22,11 +22,11 @@ impl PluginRegistry {
         &self.plugins
     }
     
-    pub fn enable_plugins(&mut self) {
+    pub fn enable_plugins(&mut self, panel_registry: &mut PanelRegistry) {
         for plugin in &mut self.plugins {
             let registration = plugin.enable();
-            for panel in registration.panels {
-                self.panel_registry.register_panel(panel);
+            for panel in registration.panel_kinds {
+                panel_registry.register_panel(plugin.id(), panel);
             }
         }
     }
