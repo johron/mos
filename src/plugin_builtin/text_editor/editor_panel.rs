@@ -2,8 +2,9 @@ use std::path::PathBuf;
 use ratatui::Frame;
 use ratatui::layout::Rect;
 use ropey::Rope;
+use crate::app::MosId;
 use crate::event::event::Event;
-use crate::panel::panel::{Panel, MosId};
+use crate::panel::panel::{Panel};
 
 pub struct Cursor {
     pub line: usize,
@@ -30,7 +31,6 @@ pub struct EditorPanel {
 impl EditorPanel {
     pub fn new() -> Self {
         Self {
-            panels: Vec::new(),
             rope: Rope::new(),
             cursors: vec![Cursor::new(0, 0, 0)],
             file_path: None,

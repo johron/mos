@@ -27,7 +27,8 @@ impl PanelRegistry {
     
     pub fn get_panels_by_plugin(&self, plugin_id: &MosId) -> Vec<MosId> {
         self.panels.iter()
-            .filter_map(|(panel_id, p_id)| if p_id == plugin_id { Some(panel_id.clone()) } else { None })
+            .filter(|(_, (p_id, _))| p_id == plugin_id)
+            .map(|(panel_id, _)| *panel_id)
             .collect()
     } // need some way of instantiating the panel from id, maybe in plugin registry
 }

@@ -2,17 +2,25 @@ use crate::app::MosId;
 use crate::panel::panel::PanelCtor;
 use crate::plugin::plugin::{Plugin, PluginRegistration};
 use crate::plugin_builtin::text_editor::editor_panel::EditorPanel;
+use crate::system::panel_registry::PanelRegistry;
 
 pub struct TextEditorPlugin {
-    pub panel_kinds: Vec<MosId>,
+    pub id: MosId,
 }
 
 impl TextEditorPlugin {
     pub fn new() -> Self {
+        Self {
+            id: MosId::new(),
+        }
     }
 }
 
 impl Plugin for TextEditorPlugin {
+    fn id(&self) -> MosId {
+        self.id
+    }
+    
     fn name(&self) -> &str {
         "Text Editor"
     }
@@ -25,12 +33,13 @@ impl Plugin for TextEditorPlugin {
         "The built-in text editor plugin for Mos"
     }
 
-    fn enable(&mut self) -> PluginRegistration {
+    fn enable(&mut self, panel_registry: &mut PanelRegistry) -> Result<(), String> {
         let panel_id = MosId::new();
-        self.panel_kinds.push(panel_id.clone());
-        PluginRegistration {
-            panel_kinds: vec![(panel_id, PanelCtor::try_from(EditorPanel)],
-        }
+        panel_registry.register_panel(self.id(), panel_id, || Box::new(EditorPanel::new()));
+        
+        println!("Enabled Text Editor Plugin with panel id: {:?}", panel_id);
+        
+        Ok(())
     }
 
     fn disable(&mut self) -> PluginRegistration {
@@ -38,6 +47,7 @@ impl Plugin for TextEditorPlugin {
     }
 
     fn handle_event(&mut self, _event: crate::event::event::Event) -> Result<(), String> {
+        println!("Text Editor Plugin received event: {:?}", _event);
         Ok(())
     }
 

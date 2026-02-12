@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use crate::app::MosId;
+use crate::event::event::Event;
 use crate::plugin::plugin::Plugin;
 use crate::system::panel_registry::PanelRegistry;
 
@@ -23,11 +24,18 @@ impl PluginRegistry {
     }
     
     pub fn enable_plugins(&mut self, panel_registry: &mut PanelRegistry) {
-        for plugin in &mut self.plugins {
-            let registration = plugin.enable();
-            for panel in registration.panel_kinds {
-                panel_registry.register_panel(plugin.id(), panel.0, panel.1);
+        for plugin in self.plugins.iter_mut() {
+            if let Err(e) = plugin.enable(panel_registry) {
+                eprintln!("Failed to enable plugin {}: {}", plugin.name(), e);
             }
+        }
+    }
+    
+    pub fn handle_plugins_events(&mut self, event: Event) {
+        for plugin in self.plugins.iter_mut() {
+            plugin.handle_event(event.clone()).unwrap_or_else(|e| {
+                eprintln!("Error handling event in plugin {}: {}", plugin.name(), e);
+            });
         }
     }
 }

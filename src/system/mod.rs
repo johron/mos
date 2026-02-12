@@ -1,2 +1,2 @@
-mod plugin_registry;
-mod panel_registry;
+pub mod plugin_registry;
+pub mod panel_registry;

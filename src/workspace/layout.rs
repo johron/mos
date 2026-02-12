@@ -1,4 +1,4 @@
-use crate::panel::panel::MosId;
+use crate::app::MosId;
 
 pub enum Axis {
     Horizontal,
