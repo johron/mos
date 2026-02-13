@@ -1,8 +1,7 @@
-use ratatui::Frame;
-use ratatui::layout::Rect;
-use uuid::Uuid;
 use crate::app::MosId;
 use crate::event::event::Event;
+use ratatui::layout::Rect;
+use ratatui::Frame;
 
 pub type PanelCtor = fn() -> Box<dyn Panel>;
 

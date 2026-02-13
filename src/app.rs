@@ -1,10 +1,10 @@
-use ratatui::Frame;
-use uuid::Uuid;
 use crate::event::event::Event;
 use crate::plugin_builtin::mos_editor::mos_editor::MosEditorPlugin;
 use crate::system::panel_registry::PanelRegistry;
 use crate::system::plugin_registry::PluginRegistry;
 use crate::workspace::workspace::Workspace;
+use ratatui::Frame;
+use uuid::Uuid;
 
 #[derive(Eq, Hash, PartialEq, Copy, Clone, Debug)]
 pub struct MosId(Uuid);
@@ -63,8 +63,14 @@ impl Mos {
         // Only handle key events for global and the current active panel.
 
         let mos_event = Event::from_crossterm_event(event);
+        
         if let Some(ev) = mos_event {
-            self.plugin_registry.handle_plugins_events(ev);
+            self.plugin_registry.handle_plugins_events(ev.clone());
+
+            let active_panel = self.workspaces[self.active_workspace].get_active_panel_mut();
+            if let Some(panel) = active_panel {
+                panel.handle_event(ev)
+            }
         }
     }
 

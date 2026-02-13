@@ -1,6 +1,6 @@
-use std::collections::HashMap;
 use crate::app::MosId;
 use crate::panel::panel::{Panel, PanelCtor};
+use std::collections::HashMap;
 
 pub struct PanelRegistry {
     panels: HashMap<MosId, (MosId, PanelCtor)>, // (plugin_id, panel_id, panel_ctor)

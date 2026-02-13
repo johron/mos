@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-use crate::app::MosId;
 use crate::event::event::Event;
 use crate::plugin::plugin::Plugin;
 use crate::system::panel_registry::PanelRegistry;

@@ -1,13 +1,13 @@
-use std::path::PathBuf;
-use ratatui::Frame;
+use crate::app::MosId;
+use crate::event::event::{Event, InputEvent};
+use crate::panel::panel::Panel;
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Paragraph;
+use ratatui::Frame;
 use ropey::Rope;
-use crate::app::MosId;
-use crate::event::event::Event;
-use crate::panel::panel::{Panel};
+use std::path::PathBuf;
 
 pub struct Cursor {
     pub line: usize,
@@ -82,7 +82,21 @@ impl Panel for EditorPanel {
     }
 
     fn handle_event(&mut self, event: Event) {
-        todo!()
+        match event {
+            Event::Input(input) => {
+                match input {
+                    InputEvent::Keyboard(keys) => {
+                        if let Some(input) = keys.first() {
+                            self.rope.insert(0, input);
+                        }
+                    }
+                    _ => {
+
+                    }
+                }
+            }
+            _ => {}
+        }
     }
 
     fn render(&self, frame: &mut Frame, area: Rect) {

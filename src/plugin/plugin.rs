@@ -1,8 +1,8 @@
-use std::collections::HashMap;
 use crate::app::MosId;
 use crate::event::event::Event;
-use crate::panel::panel::{Panel, PanelCtor};
+use crate::panel::panel::PanelCtor;
 use crate::system::panel_registry::PanelRegistry;
+use std::collections::HashMap;
 
 pub struct PluginRegistration {
     pub panel_kinds: HashMap<MosId, PanelCtor>,

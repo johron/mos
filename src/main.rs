@@ -7,12 +7,13 @@ mod event;
 mod plugin;
 mod system;
 
-use std::io::stdout;
-use std::time::Duration;
-use crossterm::{execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}, event::{EnableMouseCapture, DisableMouseCapture}};
+use crate::app::Mos;
+use crossterm::{event::{DisableMouseCapture, EnableMouseCapture}, execute, terminal::{EnterAlternateScreen, LeaveAlternateScreen}};
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use crate::app::Mos;
+use std::io::stdout;
+use std::time::Duration;
+use crossterm::event::{KeyboardEnhancementFlags, PopKeyboardEnhancementFlags, PushKeyboardEnhancementFlags};
 
 fn main() -> Result<(), String> {
     if crossterm::terminal::enable_raw_mode().is_err() {
@@ -20,21 +21,23 @@ fn main() -> Result<(), String> {
     }
     
     // Enter the alternate screen and enable mouse capture so only our UI is visible.
-    execute!(stdout(), EnterAlternateScreen, EnableMouseCapture).map_err(|e| {
+    execute!(stdout(), EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags(
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+    )).map_err(|e| {
         crossterm::terminal::disable_raw_mode().ok();
         format!("Failed to enter alternate screen: {}", e)
     })?;
 
     // RAII guard to restore terminal state on exit (also runs on panic)
-    struct TerminalRestore;
-    impl Drop for TerminalRestore {
-        fn drop(&mut self) {
-            crossterm::terminal::disable_raw_mode().ok();
-            // Best-effort restore: disable mouse capture and leave alternate screen
-            execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen).ok();
-        }
-    }
-    let _terminal_restore = TerminalRestore;
+    //struct TerminalRestore;
+    //impl Drop for TerminalRestore {
+    //    fn drop(&mut self) {
+    //        crossterm::terminal::disable_raw_mode().ok();
+    //        // Best-effort restore: disable mouse capture and leave alternate screen
+    //        execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen).ok();
+    //    }
+    //}
+    //let _terminal_restore = TerminalRestore;
 
     let backend = CrosstermBackend::new(stdout());
     let mut terminal = if let Ok(term) = Terminal::new(backend) {
@@ -42,7 +45,7 @@ fn main() -> Result<(), String> {
     } else {
         // If terminal initialization failed, try to restore terminal state and return error.
         crossterm::terminal::disable_raw_mode().ok();
-        execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen).ok();
+        execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen, PopKeyboardEnhancementFlags).ok();
         return Err("Failed to initialize terminal".to_string());
     };
 
@@ -69,6 +72,6 @@ fn main() -> Result<(), String> {
 
     // Normal cleanup will also happen in TerminalRestore::drop, but do an explicit best-effort here.
     crossterm::terminal::disable_raw_mode().ok();
-    execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen).ok();
+    execute!(stdout(), DisableMouseCapture, LeaveAlternateScreen, PopKeyboardEnhancementFlags).ok();
     Ok(())
 }

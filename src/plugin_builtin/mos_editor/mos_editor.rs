@@ -45,7 +45,7 @@ impl Plugin for MosEditorPlugin {
     }
 
     fn handle_event(&mut self, _event: crate::event::event::Event) -> Result<(), String> {
-        println!("Text Editor Plugin received event: {:?}", _event);
+        //println!("Text Editor Plugin received event: {:?}", _event);
         Ok(())
     }
 

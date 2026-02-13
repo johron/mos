@@ -1,8 +1,7 @@
-use ratatui::Frame;
-use ratatui::layout::{Constraint, Direction, Rect};
-use crate::app::{Mos, MosId};
+use crate::app::MosId;
 use crate::panel::panel::Panel;
-use crate::system::panel_registry::PanelRegistry;
+use ratatui::layout::{Constraint, Direction, Rect};
+use ratatui::Frame;
 
 pub enum Axis {
     Horizontal,
@@ -17,11 +16,59 @@ pub enum Layout {
     },
     Tabs {
         tabs: Vec<Box<dyn Panel>>,
-        active: MosId,
+        active: Option<MosId>,
     },
 }
 
 impl Layout {
+    pub fn get_active_panel(&self) -> Option<&dyn Panel> {
+        match self {
+            Layout::Split { children, .. } => {
+                for child in children {
+                    if let Some(panel) = child.get_active_panel() {
+                        return Some(panel);
+                    }
+                }
+                None
+            }
+            Layout::Tabs { tabs, active } => {
+                if let Some(active_id) = active.as_ref() {
+                    if let Some(panel) = tabs.iter().find(|p| p.id() == *active_id) {
+                        return Some(panel.as_ref());
+                    }
+                }
+                tabs.first().map(|b| b.as_ref())
+            }
+        }
+    }
+
+    pub fn get_active_panel_mut(&mut self) -> Option<&mut (dyn Panel + 'static)> {
+        match self {
+            Layout::Split { children, .. } => {
+                for child in children {
+                    if let Some(panel) = child.get_active_panel_mut() {
+                        return Some(panel);
+                    }
+                }
+                None
+            }
+
+            Layout::Tabs { tabs, active } => {
+                // Try active tab first
+                if let Some(active_id) = active.as_ref() {
+                    if let Some(index) = tabs.iter().position(|p| p.id() == *active_id) {
+                        return Some(tabs[index].as_mut());
+                    }
+                }
+
+                // Fallback to first tab
+                tabs.first_mut().map(|b| b.as_mut())
+            }
+        }
+    }
+
+
+
     pub fn render(&self, frame: &mut Frame, area: Rect) {
         match self {
             Layout::Split { axis, children } => {
@@ -42,11 +89,15 @@ impl Layout {
             }
             Layout::Tabs { tabs, active } => {
                 //println!("Rendering Tabs layout with {} tabs, active tab id: {:?}", tabs.len(), active);
-                if let Some(active_panel) = tabs.iter().find(|panel| panel.id() == *active) {
-                    active_panel.render(frame, area);
-                } else if !tabs.is_empty() {
-                    // If active panel is not found, render the first tab as fallback
-                    tabs[0].render(frame, area);
+                if let Some(active_id) = active.as_ref() {
+                    if let Some(active_panel) = tabs.iter().find(|panel| panel.id() == *active_id) {
+                        active_panel.render(frame, area);
+                        return;
+                    }
+                }
+
+                if let Some(first) = tabs.first() {
+                    first.render(frame, area);
                 } else {
                     // No tabs to render, maybe render a placeholder or do nothing
                     println!("No tabs to render in Tabs layout");
