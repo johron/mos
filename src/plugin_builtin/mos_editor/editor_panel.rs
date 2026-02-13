@@ -25,7 +25,13 @@ impl Cursor {
     }
 }
 
+pub enum Mode {
+    Normal,
+    Insert,
+}
+
 pub struct EditorPanel {
+    pub mode: Mode,
     pub rope: Rope,
     pub cursors: Vec<Cursor>,
     pub file_path: Option<PathBuf>,
@@ -35,6 +41,7 @@ pub struct EditorPanel {
 impl EditorPanel {
     pub fn new() -> Self {
         Self {
+            mode: Mode::Normal,
             rope: Rope::new(),
             cursors: vec![Cursor::new(0, 0, 0)],
             file_path: None,

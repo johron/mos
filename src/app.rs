@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use crate::event::event::Event;
 use crate::plugin_builtin::mos_editor::mos_editor::MosEditorPlugin;
 use crate::system::panel_registry::PanelRegistry;
@@ -9,6 +10,13 @@ use uuid::Uuid;
 #[derive(Eq, Hash, PartialEq, Copy, Clone, Debug)]
 pub struct MosId(Uuid);
 
+
+#[derive(PartialEq)]
+pub enum MosState {
+    Normal, // Events can go to active panel, state is now handled by the active panel, e.g. a text editor has their own modes normal, insert..
+    Floating, // Events only go to active floating panel
+}
+
 impl MosId {
     pub fn new() -> Self {
         MosId(Uuid::new_v4())
@@ -16,6 +24,7 @@ impl MosId {
 }
 
 pub struct Mos {
+    pub state: MosState,
     pub should_quit: bool,
     pub active_workspace: usize,
     pub workspaces: Vec<Workspace>,
@@ -47,6 +56,7 @@ impl Mos {
         }
 
         Mos {
+            state: MosState::Normal,
             should_quit: false,
             active_workspace: 0,
             workspaces: vec![workspace],
@@ -63,13 +73,15 @@ impl Mos {
         // Only handle key events for global and the current active panel.
 
         let mos_event = Event::from_crossterm_event(event);
-        
+
         if let Some(ev) = mos_event {
             self.plugin_registry.handle_plugins_events(ev.clone());
 
-            let active_panel = self.workspaces[self.active_workspace].get_active_panel_mut();
-            if let Some(panel) = active_panel {
-                panel.handle_event(ev)
+            if self.state == MosState::Normal {
+                let active_panel = self.workspaces[self.active_workspace].get_active_panel_mut();
+                if let Some(panel) = active_panel {
+                    panel.handle_event(ev)
+                }
             }
         }
     }
