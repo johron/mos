@@ -14,6 +14,10 @@ pub trait Plugin {
     fn name(&self) -> &str;
     fn version(&self) -> &str;
     fn description(&self) -> &str;
+    // fn dependencies(&self) -> Vec<PrettyMosKind>;
+
+    // fn is_backend()
+    // also/or have some kind of function subscription, so that they only get what the care about
 
     fn enable(&mut self, panel_registry: &mut PanelRegistry) -> Result<(), String>;
     fn disable(&mut self) -> PluginRegistration; // return the panels to be removed and unregistered, could probably just remove all panels with this plugin's id from hashmap
