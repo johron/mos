@@ -2,7 +2,7 @@ use crossterm::event::{KeyEvent, MouseEvent};
 
 #[derive(Clone, Debug)]
 pub enum InputEvent {
-    Key(KeyEvent),
+    Key(KeyEvent), // convert to Vec<String>
     Mouse(MouseEvent),
 }
 

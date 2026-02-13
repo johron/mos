@@ -25,6 +25,10 @@ impl PanelRegistry {
         &self.panels
     }
     
+    pub fn get_panel(&self, panel_id: &MosId) -> Option<&(MosId, PanelCtor)> {
+        self.panels.get(panel_id)
+    }
+    
     pub fn get_panels_by_plugin(&self, plugin_id: &MosId) -> Vec<MosId> {
         self.panels.iter()
             .filter(|(_, (p_id, _))| p_id == plugin_id)
