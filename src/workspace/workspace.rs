@@ -4,8 +4,8 @@ use crate::workspace::layout::{FloatingPanel, Layout};
 use ratatui::Frame;
 
 pub struct Workspace {
+    floating_panel: Option<FloatingPanel>,
     layout: Layout,
-    floating_panels: Vec<FloatingPanel>,
 }
 
 impl Workspace {
@@ -15,7 +15,7 @@ impl Workspace {
                 tabs: Vec::new(),
                 active: None,
             },
-            floating_panels: Vec::new(),
+            floating_panel: None,
         }
     }
 
@@ -32,12 +32,20 @@ impl Workspace {
         }
     }
 
+    pub fn set_floating(&mut self, floating_panel: Option<FloatingPanel>) {
+        self.floating_panel = floating_panel;
+    }
+
     pub fn get_active_panel(&self) -> Option<&dyn Panel> {
         self.layout.get_active_panel()
     }
 
     pub fn get_active_panel_mut(&mut self) -> Option<&mut (dyn Panel + 'static)> {
         self.layout.get_active_panel_mut()
+    }
+
+    pub fn get_floating(&mut self) -> &mut Option<FloatingPanel> {
+        &mut self.floating_panel
     }
 
     pub fn render(&self, frame: &mut Frame) {

@@ -13,7 +13,7 @@ pub struct MosId(Uuid);
 
 #[derive(PartialEq)]
 pub enum MosState {
-    Normal, // Events can go to active panel, state is now handled by the active panel, e.g. a text editor has their own modes normal, insert..
+    Panel, // Events can go to active panel, state is now handled by the active panel, e.g. a text editor has their own modes normal, insert..
     Floating, // Events only go to active floating panel
 }
 
@@ -56,7 +56,7 @@ impl Mos {
         }
 
         Mos {
-            state: MosState::Normal,
+            state: MosState::Panel,
             should_quit: false,
             active_workspace: 0,
             workspaces: vec![workspace],
@@ -77,10 +77,18 @@ impl Mos {
         if let Some(ev) = mos_event {
             self.plugin_registry.handle_plugins_events(ev.clone());
 
-            if self.state == MosState::Normal {
-                let active_panel = self.workspaces[self.active_workspace].get_active_panel_mut();
-                if let Some(panel) = active_panel {
-                    panel.handle_event(ev)
+            
+            match self.state {
+                MosState::Panel => {
+                    let active_panel = self.workspaces[self.active_workspace].get_active_panel_mut();
+                    if let Some(panel) = active_panel {
+                        panel.handle_event(ev)
+                    }
+                },
+                MosState::Floating => {
+                    if let Some(floating) = self.workspaces[self.active_workspace].get_floating() {
+                        floating.panel.handle_event(ev);
+                    }
                 }
             }
         }

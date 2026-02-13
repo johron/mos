@@ -124,6 +124,6 @@ pub enum Offset {
 }
 
 pub struct FloatingPanel {
-    id: MosId,
-    anchor: Anchor,
+    pub panel: Box<dyn Panel>,
+    pub anchor: Anchor,
 }
