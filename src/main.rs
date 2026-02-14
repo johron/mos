@@ -22,7 +22,8 @@ fn main() -> Result<(), String> {
     
     // Enter the alternate screen and enable mouse capture so only our UI is visible.
     execute!(stdout(), EnterAlternateScreen, EnableMouseCapture, PushKeyboardEnhancementFlags(
-        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES
+        KeyboardEnhancementFlags::DISAMBIGUATE_ESCAPE_CODES,
+        //KeyboardEnhancementFlags::REPORT_ALL_KEYS_AS_ESCAPE_CODES
     )).map_err(|e| {
         crossterm::terminal::disable_raw_mode().ok();
         format!("Failed to enter alternate screen: {}", e)

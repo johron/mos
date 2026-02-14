@@ -9,6 +9,7 @@ use ratatui::Frame;
 use ropey::Rope;
 use std::path::PathBuf;
 
+#[derive(PartialEq, Clone, Ord, Eq, PartialOrd)]
 pub struct Cursor {
     pub line: usize,
     pub column: usize,
@@ -23,6 +24,16 @@ impl Cursor {
             goal_column,
         }
     }
+}
+
+pub enum CursorDirection {
+    Left,
+    Right,
+    Up,
+    Down,
+
+    WordRight,
+    WordLeft,
 }
 
 pub enum Mode {
@@ -93,9 +104,10 @@ impl Panel for EditorPanel {
             Event::Input(input) => {
                 match input {
                     InputEvent::Keyboard(keys) => {
-                        if let Some(input) = keys.first() {
-                            self.rope.insert(0, input);
-                        }
+                        
+                    }
+                    InputEvent::Char(char) => {
+                        self.input(char);
                     }
                     _ => {
 

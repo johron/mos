@@ -3,6 +3,7 @@ use crossterm::event::{KeyCode, KeyEvent, KeyModifiers, MouseEvent};
 #[derive(Clone, Debug)]
 pub enum InputEvent {
     Keyboard(Vec<String>), // convert to Vec<String>
+    Char(char),
     Mouse(MouseEvent),
 }
 
@@ -14,7 +15,7 @@ pub enum Event {
 }
 
 impl Event {
-    pub fn keyboard_input_event_from_crossterm_key(event: KeyEvent) -> Vec<String> {
+    pub fn keyboard_input_event_from_crossterm_key(event: KeyEvent) -> Event {
         fn modifier_name(modifier: KeyModifiers) -> String {
             let dbg = format!("{:?}", modifier);
 
@@ -45,21 +46,21 @@ impl Event {
         let key_str = match event.code {
             KeyCode::BackTab => String::from("tab"),
             KeyCode::F(n) => format!("f{}", n),
-            KeyCode::Char(c) => c.to_string().to_lowercase(),
+            KeyCode::Char(c) => return Event::Input(InputEvent::Char(c)),
             other => format!("{:?}", other).to_lowercase(),
         };
 
         keyboard_vec.push(key_str);
+        keyboard_vec.sort();
 
-        keyboard_vec
+        Event::Input(InputEvent::Keyboard(keyboard_vec))
     }
 
     pub fn from_crossterm_event(event: crossterm::event::Event) -> Option<Self> {
         match event {
             crossterm::event::Event::Key(key_event) => {
-                let keyboard_vec = Event::keyboard_input_event_from_crossterm_key(key_event);
-
-                Some(Event::Input(InputEvent::Keyboard(keyboard_vec)))
+                let ev = Event::keyboard_input_event_from_crossterm_key(key_event);
+                Some(ev)
             },
             crossterm::event::Event::Mouse(mouse_event) => Some(Event::Input(InputEvent::Mouse(mouse_event))),
             _ => None,
